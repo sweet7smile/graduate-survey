@@ -1,0 +1,13 @@
+# ⚠️ 含真實 Sheet ID、Drive 資料夾 ID 與通知信箱，絕對不要上傳
+# 公開版本請看 config.example.gs（由 tools/build_pages.py 自動產生）
+config.gs
+
+# 本機工具設定
+.claude/
+
+# 系統產生
+desktop.ini
+Thumbs.db
+.DS_Store
+__pycache__/
+*.pyc
