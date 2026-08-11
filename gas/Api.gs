@@ -458,6 +458,138 @@ function adminReview_(req) {
 }
 
 
+/**
+ * 刪除整筆資料（五張分頁的列 + Drive 相片）。
+ *
+ * 這是不可逆操作，所以要求前端把該筆的 6 碼編號原樣送回來比對，
+ * 避免誤點或前端傳錯 id 就把別人的資料刪掉。
+ *
+ * Drive 相片預設搬到「_已刪除」資料夾而不是丟垃圾桶，
+ * 誤刪還救得回來；要徹底清除請把 CONFIG.HARD_DELETE_FILES 設成 true。
+ */
+function adminDelete_(req) {
+  const sess = requireRole_(req.token, 'teacher');
+  const lock = LockService.getScriptLock();
+
+  try {
+    if (!lock.tryLock(CONFIG.LOCK_TIMEOUT_MS)) return fail_('系統忙碌中，請稍後再試。');
+
+    const row = findMainRowById_(req.submissionId);
+    if (!row) return fail_('找不到這筆資料，可能已經被刪除了。');
+
+    const shortId = String(row.data.submission_id).substring(0, 6).toUpperCase();
+    const confirmCode = String(req.confirmCode || '').trim().toUpperCase();
+    if (confirmCode !== shortId) {
+      return fail_('確認碼不符。請輸入這筆資料的編號 ' + shortId + ' 以確認刪除。');
+    }
+
+    const name = String(row.data.name || '');
+    const gradYear = String(row.data.grad_year || '');
+
+    // ── 先處理 Drive，失敗就整個中止，不要留下「列刪了但檔案還在」的半套狀態 ──
+    const fileRows = readSheetObjects_(CONFIG.SHEETS.FILES, SCHEMA.FILES)
+      .filter(function (r) { return String(r.data.submission_id) === String(req.submissionId); })
+      .map(function (r) { return r.data; });
+
+    const fileResult = disposeFiles_(fileRows, gradYear, name, shortId);
+
+    // ── 再刪 Sheet 的列 ──
+    const deleted = {
+      main: deleteRowsOf_(CONFIG.SHEETS.MAIN, SCHEMA.MAIN, req.submissionId),
+      adm: deleteRowsOf_(CONFIG.SHEETS.ADMISSIONS, SCHEMA.ADMISSIONS, req.submissionId),
+      itv: deleteRowsOf_(CONFIG.SHEETS.INTERVIEW, SCHEMA.INTERVIEW, req.submissionId),
+      prc: deleteRowsOf_(CONFIG.SHEETS.PRACTICAL, SCHEMA.PRACTICAL, req.submissionId),
+      file: deleteRowsOf_(CONFIG.SHEETS.FILES, SCHEMA.FILES, req.submissionId)
+    };
+    SpreadsheetApp.flush();
+
+    // 刻意只記編號與數量，不記姓名與內容 ——
+    // 學生要求刪除個資時，紀錄本身不該又把個資留下來
+    writeLog_('INFO', req.submissionId, '教師刪除資料：' + shortId,
+      '操作者 ' + sess.label + '｜列數 主' + deleted.main + '/校系' + deleted.adm +
+      '/口試' + deleted.itv + '/術科' + deleted.prc + '/檔案' + deleted.file +
+      '｜相片 ' + fileResult.message);
+
+    return {
+      ok: true,
+      message: '已刪除編號 ' + shortId + '（口試 ' + deleted.itv + ' 題、術科 ' +
+               deleted.prc + ' 項、相片 ' + deleted.file + ' 張）。' + fileResult.message,
+      deleted: deleted
+    };
+
+  } catch (e) {
+    writeLog_('ERROR', req.submissionId, '刪除失敗', String(e && e.stack ? e.stack : e));
+    return fail_('刪除時發生錯誤：' + (e && e.message ? e.message : e));
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+
+/** 處理該筆的 Drive 相片：搬到 _已刪除 或丟垃圾桶 */
+function disposeFiles_(fileRows, gradYear, name, shortId) {
+  if (!fileRows.length) return { message: '此筆沒有相片。' };
+
+  const hard = !!CONFIG.HARD_DELETE_FILES;
+  let movedFolders = 0, movedFiles = 0, missing = 0;
+  const doneFolders = {};
+
+  let trashRoot = null;
+  if (!hard) {
+    const root = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    trashRoot = getOrCreateFolder_(root, CONFIG.TRASH_FOLDER_NAME);
+  }
+
+  fileRows.forEach(function (f) {
+    let file;
+    try {
+      file = DriveApp.getFileById(String(f.file_id));
+    } catch (e) {
+      missing++;      // 檔案已被手動刪掉，略過即可
+      return;
+    }
+
+    if (hard) {
+      file.setTrashed(true);
+      movedFiles++;
+      return;
+    }
+
+    // 整個人的資料夾一起搬，保持原本的分組
+    const parents = file.getParents();
+    if (parents.hasNext()) {
+      const folder = parents.next();
+      const fid = folder.getId();
+      if (!doneFolders[fid]) {
+        doneFolders[fid] = true;
+        try {
+          folder.moveTo(trashRoot);
+          movedFolders++;
+        } catch (e) {
+          file.moveTo(trashRoot);   // 搬資料夾失敗就退而求其次搬檔案
+          movedFiles++;
+        }
+      }
+    } else {
+      file.moveTo(trashRoot);
+      movedFiles++;
+    }
+  });
+
+  const parts = [];
+  if (hard) {
+    parts.push('相片已丟入垃圾桶（' + movedFiles + ' 張，30 天後由 Google 永久清除）');
+  } else {
+    if (movedFolders) parts.push('相片資料夾已搬到「' + CONFIG.TRASH_FOLDER_NAME + '」（' + movedFolders + ' 個）');
+    if (movedFiles) parts.push('另有 ' + movedFiles + ' 張相片單獨搬移');
+    if (!movedFolders && !movedFiles) parts.push('沒有可搬移的相片');
+  }
+  if (missing) parts.push('有 ' + missing + ' 張在雲端硬碟已不存在');
+
+  return { message: parts.join('，') + '。' };
+}
+
+
 /** 匯出指定分頁為 CSV 字串（含 BOM，Excel 開啟中文不會亂碼） */
 function adminExport_(req) {
   requireRole_(req.token, 'teacher');

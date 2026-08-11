@@ -425,4 +425,35 @@ table.data td.num { text-align: center; color: var(--muted); }
 .kv { display: grid; grid-template-columns: 130px 1fr; gap: 5px 12px; font-size: 14px; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; white-space: pre-wrap; word-break: break-word; }
+
+/* 危險操作：預設收合，視覺上和一般操作明顯分開 */
+details.danger-zone {
+  margin-top: 18px;
+  border: 1px solid #f0c6c1;
+  border-radius: 10px;
+  background: #fffaf9;
+}
+details.danger-zone > summary {
+  padding: 11px 14px; cursor: pointer;
+  font-weight: 700; font-size: 14px; color: var(--danger);
+  list-style: none;
+}
+details.danger-zone > summary::-webkit-details-marker { display: none; }
+details.danger-zone > summary::after { content: " ▾"; }
+details.danger-zone[open] > summary::after { content: " ▴"; }
+details.danger-zone > div {
+  padding: 0 14px 14px;
+  border-top: 1px solid #f5ddda;
+  color: #8a3a30;
+}
+details.danger-zone code {
+  background: #fdecea; padding: 2px 7px; border-radius: 5px;
+  font-weight: 700; letter-spacing: 2px; color: var(--danger);
+}
+
+.btn-sm.danger {
+  border-color: var(--danger); background: var(--danger); color: #fff; font-weight: 600;
+}
+.btn-sm.danger:hover:not(:disabled) { filter: brightness(1.08); background: var(--danger); }
+.btn-sm.danger:disabled { opacity: .45; cursor: not-allowed; }
 </style>

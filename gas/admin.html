@@ -98,6 +98,27 @@
         <button type="button" class="btn-sm" onclick="doReview('待審')">↺ 改回待審</button>
       </div>
     </div>
+
+    <!-- 刪除是不可逆的，所以放在獨立區塊並要求輸入編號，避免誤點 -->
+    <details class="danger-zone">
+      <summary>🗑️ 刪除這筆資料</summary>
+      <div>
+        <p style="margin:0 0 10px;font-size:13px;line-height:1.7">
+          會刪除 <strong>Main／Admissions／Interview／Practical／Files</strong> 五張分頁中屬於這筆的所有列。
+          相片會搬到雲端硬碟的「<strong>_已刪除</strong>」資料夾（誤刪還救得回來）。
+          <br><strong>此操作無法從網頁復原。</strong>
+        </p>
+        <div class="field" style="margin-bottom:10px">
+          <label>請輸入這筆資料的編號 <code id="delCode">------</code> 以確認</label>
+          <input type="text" id="delConfirm" maxlength="6" autocomplete="off"
+                 placeholder="輸入 6 碼編號"
+                 style="text-transform:uppercase;letter-spacing:3px;font-weight:700">
+        </div>
+        <button type="button" class="btn-sm danger" id="btnDelete" disabled>
+          確認刪除，無法復原
+        </button>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -134,8 +155,10 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('fKw').oninput = function () {
     clearTimeout(t); t = setTimeout(renderTable, 200);
   };
-  document.getElementById('btnReload').onclick = load;
+  // 不能直接指定 load，否則事件物件會被當成 keepBanner 傳進去（truthy）
+  document.getElementById('btnReload').onclick = function () { load(); };
   document.getElementById('btnExport').onclick = doExport;
+  bindDelete();
 
   load();
 });
@@ -157,7 +180,12 @@ function handleAuthFail(res) {
   return false;
 }
 
-function load() {
+/**
+ * 重新載入列表。
+ * @param {boolean} keepBanner 保留現有訊息 —— 審核／刪除成功後會接著呼叫 load()，
+ *        若這裡把訊息框清掉，剛顯示的成功訊息會立刻變成隱藏，老師等於沒有回饋。
+ */
+function load(keepBanner) {
   busy(true);
   api('adminList', { token: token() })
     .then(function (res) {
@@ -165,7 +193,7 @@ function load() {
       if (handleAuthFail(res)) return;
       if (!res.ok) { showBanner('#msgBox', res.message || '載入失敗。'); return; }
       LIST = res.list;
-      document.getElementById('msgBox').className = 'msg-box';
+      if (!keepBanner) document.getElementById('msgBox').className = 'msg-box';
       renderStat(res.stat);
       buildYearFilter();
       renderTable();
@@ -262,6 +290,10 @@ function openDetail(submissionId) {
       CURRENT = LIST.filter(function (x) { return x.submissionId === submissionId; })[0];
       renderDetail(res.record);
       document.getElementById('mNote').value = CURRENT ? CURRENT.reviewNote : '';
+      document.getElementById('delCode').textContent = CURRENT ? CURRENT.code : '------';
+      document.getElementById('delConfirm').value = '';
+      document.getElementById('btnDelete').disabled = true;
+      document.querySelector('.danger-zone').open = false;
       document.getElementById('modal').classList.add('show');
     })
     .catch(function (e) { busy(false); alert('連線失敗：' + e); });
@@ -270,6 +302,49 @@ function openDetail(submissionId) {
 function closeModal() {
   document.getElementById('modal').classList.remove('show');
   CURRENT = null;
+  // 收合並清空刪除區，避免下次開啟時還留著上一筆的確認碼
+  const dz = document.querySelector('.danger-zone');
+  if (dz) dz.open = false;
+  document.getElementById('delConfirm').value = '';
+  document.getElementById('btnDelete').disabled = true;
+}
+
+
+/* ── 刪除 ─────────────────────────────── */
+
+function bindDelete() {
+  const input = document.getElementById('delConfirm');
+  const btn = document.getElementById('btnDelete');
+
+  input.oninput = function () {
+    const want = CURRENT ? CURRENT.code.toUpperCase() : '';
+    btn.disabled = input.value.trim().toUpperCase() !== want;
+  };
+  btn.onclick = doDelete;
+}
+
+function doDelete() {
+  if (!CURRENT) return;
+  const code = document.getElementById('delConfirm').value.trim().toUpperCase();
+
+  if (!confirm('最後確認：即將刪除「' + CURRENT.name + '」（編號 ' + CURRENT.code + '）的所有資料。\n\n' +
+               '五張分頁的對應列都會被刪除，此操作無法從網頁復原。\n\n確定要刪除嗎？')) {
+    return;
+  }
+
+  busy(true, '刪除中…');
+  api('adminDelete', {
+    token: token(), submissionId: CURRENT.submissionId, confirmCode: code
+  })
+    .then(function (res) {
+      busy(false);
+      if (handleAuthFail(res)) return;
+      if (!res.ok) { alert(res.message || '刪除失敗'); return; }
+      closeModal();
+      showBanner('#msgBox', res.message, 'ok');
+      load(true);
+    })
+    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
 }
 
 function kv(pairs) {
@@ -383,7 +458,7 @@ function doReview(status) {
       if (!res.ok) { alert(res.message || '審核失敗'); return; }
       closeModal();
       showBanner('#msgBox', res.message, 'ok');
-      load();
+      load(true);
     })
     .catch(function (e) { busy(false); alert('連線失敗：' + e); });
 }

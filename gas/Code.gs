@@ -97,6 +97,7 @@ function routeApi_(req) {
     case 'adminList':    return adminList_(req);
     case 'adminDetail':  return adminDetail_(req);
     case 'adminReview':  return adminReview_(req);
+    case 'adminDelete':  return adminDelete_(req);
     case 'adminExport':  return adminExport_(req);
     case 'browse':       return browse_(req);
     default:             return fail_('不支援的操作：' + req.action);

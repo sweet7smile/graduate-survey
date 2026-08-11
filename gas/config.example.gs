@@ -45,6 +45,13 @@ const CONFIG = {
   LOCK_AFTER_APPROVED: true,          // 審核「通過」後畢業生不能再修改
   BROWSE_REQUIRE_APPROVED: true,      // 瀏覽頁只顯示審核通過的資料
 
+  // ── 刪除 ────────────────────────────────────────────────
+  // false（預設）：相片搬到「_已刪除」資料夾，誤刪救得回來
+  // true          ：相片直接丟進雲端硬碟垃圾桶（30 天後由 Google 永久清除）
+  //                 學生依個資法要求徹底刪除時才建議開啟
+  HARD_DELETE_FILES: false,
+  TRASH_FOLDER_NAME: '_已刪除'
+
   // ── Sheet 分頁名稱 ──────────────────────────────────────
   SHEETS: {
     MAIN: 'Main',
