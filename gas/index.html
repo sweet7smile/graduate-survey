@@ -19,6 +19,14 @@
 
 <main>
 
+  <!-- 蜜罐欄位：真人在畫面上看不到也點不到，只有無腦把整份表單填一遍的
+       自動化機器人才會填到它。刻意不設 name 屬性，避免瀏覽器自動填入
+       誤觸；欄位 key 要跟 config.gs 的 CONFIG.HONEYPOT_FIELD 一致。 -->
+  <div class="hp-trap" aria-hidden="true">
+    <label for="hpCheck">請勿填寫此欄位</label>
+    <input type="text" id="hpCheck" data-m="hp_check" tabindex="-1" autocomplete="off">
+  </div>
+
   <p class="hint">
     這份表單會蒐集你的升學經驗（推甄校系、口試題目、術科內容、心得），
     整理後提供給學弟妹參考。<strong>大部分欄位都是選填</strong>，

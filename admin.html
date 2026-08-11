@@ -69,6 +69,16 @@ nav.topnav {
   .nav-user { width: 100%; }
 }
 
+/* ── 蜜罐（防灌水用，見 index.html 說明）───────────────── */
+.hp-trap {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* ── 頁首 ─────────────────────────────── */
 header.top {
   background: linear-gradient(135deg, var(--brand), var(--brand-light));
@@ -671,6 +681,15 @@ const CONFIG = {
   TEACHER_LOGIN_MAX_FAILS: 8,         // 連續失敗幾次觸發鎖定
   TEACHER_LOGIN_WINDOW_MIN: 15,       // 失敗計數多久沒動作就自動歸零
   TEACHER_LOGIN_LOCKOUT_MIN: 10,      // 鎖定持續時間
+
+  // ── 防灌水 ──────────────────────────────────────────────
+  // 原始碼公開，任何人都能繞過網頁直接打 API，這兩層是低成本的第一道防線：
+  // 蜜罐擋一般自動填表機器人，流量限制擋短時間內灌爆。擋不住存心針對
+  // 本站寫程式的人（他讀得到這行常數本身），真要防那個需要 reCAPTCHA。
+  HONEYPOT_FIELD: 'hp_check',         // 前端隱藏欄位的 key，改這個要同步改 index.html 的 data-m
+  MAX_SUBMISSIONS_PER_WINDOW: 30,     // 全站流量限制：每個時間窗最多幾筆提交嘗試
+  SUBMIT_WINDOW_MIN: 10,              // 時間窗長度（分鐘）；30 筆/10 分鐘足夠讓一整班同時填表
+  MAIL_QUOTA_RESERVE: 5,              // 每日寄信配額只剩這個數字以下，先停發教師通知信、保留學生確認信優先
 
   // ── 刪除 ────────────────────────────────────────────────
   // false（預設）：相片搬到「_已刪除」資料夾，誤刪救得回來

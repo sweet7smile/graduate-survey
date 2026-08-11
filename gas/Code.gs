@@ -238,12 +238,50 @@ function applyFormatting_(sh, schema, schemaKey) {
 //  主要提交流程
 // ═══════════════════════════════════════════════════════════
 
+const SUBMIT_RATE_KEY = 'submit_rate_window';
+
+/**
+ * 送出前的防灌水檢查：蜜罐欄位 + 全站流量限制。
+ *
+ * 刻意放在 LockService.tryLock() 之前執行 —— 灌水請求若先排隊等鎖
+ * （最多可等 30 秒），等於讓每一筆垃圾請求都佔用一個執行環境的時間，
+ * 反而變成另一種形式的阻斷服務。先擋掉可疑請求，合法使用者才不受影響。
+ *
+ * 回傳非 null 代表要擋下，訊息可直接回給前端；回傳 null 代表放行。
+ */
+function checkSubmitAbuse_(payload) {
+  // 蜜罐：這個欄位在畫面上對真人不可見，只有無腦把整份表單欄位都填一遍的
+  // 自動化機器人才會填到它。擋不住讀過原始碼、刻意針對本站寫程式的人，
+  // 但那種對手本來就不是這一層要防的範圍。
+  const hp = payload && payload.main ? payload.main[CONFIG.HONEYPOT_FIELD] : '';
+  if (String(hp || '').trim() !== '') {
+    writeLog_('WARN', '', '疑似機器人提交（蜜罐欄位被填寫）', String(hp).slice(0, 100));
+    return '提交失敗，請重新整理頁面再試一次。';
+  }
+
+  // 全站流量限制：短時間內提交嘗試過多就先擋下，避免灌爆 Sheet／Drive／寄信配額。
+  // 用全站共用計數器而非依來源區分，因為 Apps Script 拿不到穩定的來源 IP。
+  const cache = CacheService.getScriptCache();
+  const count = Number(cache.get(SUBMIT_RATE_KEY) || 0) + 1;
+  cache.put(SUBMIT_RATE_KEY, String(count), CONFIG.SUBMIT_WINDOW_MIN * 60);
+  if (count > CONFIG.MAX_SUBMISSIONS_PER_WINDOW) {
+    writeLog_('WARN', '', '觸發全站流量限制',
+      '這個 ' + CONFIG.SUBMIT_WINDOW_MIN + ' 分鐘的時間窗已有 ' + count + ' 筆提交嘗試');
+    return '目前提交人數較多，請幾分鐘後再試一次。';
+  }
+
+  return null;
+}
+
 /**
  * 前端呼叫入口。
  * @param {Object} payload { main: {...}, admissions: [ {..., interviews:[], practicals:[]} ] }
  * @return {Object} { ok:boolean, submissionId?:string, message?:string }
  */
 function submitForm(payload) {
+  const abuseMsg = checkSubmitAbuse_(payload);
+  if (abuseMsg) return fail_(abuseMsg);
+
   const lock = LockService.getScriptLock();
   let submissionId = '';
 
@@ -541,6 +579,14 @@ function writeLog_(level, submissionId, message, detail) {
 //  通知信
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * 寄確認信與通知信。
+ *
+ * 加了每日寄信配額保護：MailApp.getRemainingDailyQuota() 是 Google 自己
+ * 追蹤的真實剩餘額度（比自己另外用計數器猜準），配額快用完時優先犧牲
+ * 「教師通知信」這種非必要的，保留「學生確認信」——萬一真的被灌水，
+ * 受害的應該是你的收件匣，而不是某個認真填表的學生收不到憑證信。
+ */
 function sendMails_(main, shortId, admCount, itvCount, prcCount) {
   const summary =
     '畢業學年度：' + main.grad_year + ' 學年度\n' +
@@ -550,8 +596,12 @@ function sendMails_(main, shortId, admCount, itvCount, prcCount) {
     '推甄校系：' + admCount + ' 筆　口試題目：' + itvCount + ' 題　術科：' + prcCount + ' 項\n' +
     '提交編號：' + shortId;
 
+  const remaining = MailApp.getRemainingDailyQuota();
+  const canNotify = !!CONFIG.NOTIFY_EMAIL && remaining > CONFIG.MAIL_QUOTA_RESERVE;
+  const canConfirm = !!CONFIG.SEND_CONFIRM_MAIL && !!main.email && remaining > 0;
+
   // 通知承辦教師
-  if (CONFIG.NOTIFY_EMAIL) {
+  if (canNotify) {
     MailApp.sendEmail({
       to: CONFIG.NOTIFY_EMAIL,
       subject: '[畢業生資料] 新提交 — ' + main.name + '（' + main.grad_year + ' 學年度）',
@@ -559,10 +609,12 @@ function sendMails_(main, shortId, admCount, itvCount, prcCount) {
             '\n聯絡 Email：' + main.email +
             '\n\n試算表：https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID + '/edit'
     });
+  } else if (CONFIG.NOTIFY_EMAIL) {
+    writeLog_('WARN', '', '寄信配額不足，跳過教師通知信', '剩餘配額 ' + remaining);
   }
 
   // 確認信給學生
-  if (CONFIG.SEND_CONFIRM_MAIL && main.email) {
+  if (canConfirm) {
     MailApp.sendEmail({
       to: main.email,
       subject: '【' + CONFIG.CONTACT_NAME + '】畢業生升學資料已收到（編號 ' + shortId + '）',
@@ -579,6 +631,9 @@ function sendMails_(main, shortId, admCount, itvCount, prcCount) {
         '<p style="color:#777;font-size:13px">' + escapeHtml_(CONFIG.SCHOOL) + ' ' +
         escapeHtml_(CONFIG.DEPT) + '</p></div>'
     });
+  } else if (CONFIG.SEND_CONFIRM_MAIL && main.email) {
+    writeLog_('WARN', '', '寄信配額不足，學生確認信未寄出',
+      '剩餘配額 ' + remaining + '，收件人 ' + main.email);
   }
 }
 
