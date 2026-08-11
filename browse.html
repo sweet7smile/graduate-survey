@@ -937,6 +937,20 @@ function getGradYears_() {
 }
 
 
+/**
+ * 伺服器端版本，邏輯跟 common.html 的 gradYearLabel() 完全一致
+ * （寄信、重複提交的錯誤訊息這些後端組字串的地方要用）。
+ * 兩邊各自維護是因為前端跑在瀏覽器、後端跑在 Apps Script，
+ * 沒辦法共用同一份 JS，但公式本身很單純，維持一致不難。
+ */
+function gradYearLabel_(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
+
 /** 傳給前端的設定（不含任何機密資訊） */
 function getClientConfig() {
   return {
@@ -1103,6 +1117,26 @@ function renderNav(active) {
   document.body.insertBefore(nav, document.body.firstChild);
 }
 
+/**
+ * 畢業學年度（後端存的原始值，例如 '114'）→ 使用者看得懂的畢業年份文字。
+ *
+ * 台灣的學年度從當年 8 月算到隔年 7 月，114 學年度的應屆生是民國 115 年
+ * 6 月畢業的——直接顯示「114學年度」常讓人誤以為是民國 114 年畢業，
+ * 學生反映這點造成困擾，所以改成明講「民國 115 年畢業」。
+ *
+ * 只改這裡的「顯示文字」，後端存的 grad_year 值仍是原本的學年度數字
+ * （114、113…），跟舊資料、重複提交檢查、Drive 資料夾都不衝突。
+ *
+ * @param {string|number} academicYear 學年度數字
+ * @param {boolean} short 為 true 時省略「民國」前綴，用於表格欄位、標籤這類空間有限的地方
+ */
+function gradYearLabel(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1181,12 +1215,12 @@ function uniqueSorted(arr) {
   });
 }
 
-function fillSelect(id, values, allLabel) {
+function fillSelect(id, values, allLabel, labelFn) {
   const el = document.getElementById(id);
   el.innerHTML = '<option value="">' + allLabel + '</option>';
   values.forEach(function (v) {
     const o = document.createElement('option');
-    o.value = v; o.textContent = v;
+    o.value = v; o.textContent = labelFn ? labelFn(v) : v;
     el.appendChild(o);
   });
 }
@@ -1196,7 +1230,7 @@ function buildFilters() {
   fillSelect('fUniv', uniqueSorted(all.map(function (x) { return x.univ; })), '全部學校');
   fillSelect('fMajor', uniqueSorted(all.map(function (x) { return x.major; })), '全部科系');
   fillSelect('fYear', uniqueSorted(DATA.people.map(function (p) { return p.gradYear; }))
-    .map(String), '全部年度');
+    .map(String), '全部年度', function (y) { return gradYearLabel(y, true); });
   const cats = [];
   DATA.questions.forEach(function (q) { (q.categories || []).forEach(function (c) { cats.push(c); }); });
   fillSelect('fCat', uniqueSorted(cats), '全部分類');
@@ -1301,7 +1335,7 @@ function questionCard(q) {
       '<span class="tag gray">' + escapeHtml(q.major) + '</span>' +
       (q.format ? '<span>' + escapeHtml(q.format) + '</span>' : '') +
       (stars ? '<span>' + stars + '</span>' : '') +
-      '<span>' + escapeHtml(yearOf(q.key)) + ' 級</span>' +
+      '<span>' + escapeHtml(gradYearLabel(yearOf(q.key), true)) + '</span>' +
       (q.categories || []).map(function (c) {
         return '<span class="tag warn">' + escapeHtml(c) + '</span>';
       }).join('') +
@@ -1320,7 +1354,7 @@ function practicalCard(p) {
       '<span class="tag gray">' + escapeHtml(p.major) + '</span>' +
       (p.subject ? '<span class="tag warn">' + escapeHtml(p.subject) + '</span>' : '') +
       (p.durationMin ? '<span>' + escapeHtml(p.durationMin) + ' 分鐘</span>' : '') +
-      '<span>' + escapeHtml(yearOf(p.key)) + ' 級</span>' +
+      '<span>' + escapeHtml(gradYearLabel(yearOf(p.key), true)) + '</span>' +
     '</div>' +
     '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
     (p.equipment ? '<div class="q-extra"><b>現場設備／工具：</b>\n' + escapeHtml(p.equipment) + '</div>' : '') +
@@ -1349,7 +1383,7 @@ function personCard(p) {
   const adms = DATA.admissions.filter(function (a) { return a.key === p.key; });
   return '<div class="q-card">' +
     '<div class="q-meta">' +
-      '<span class="tag">' + escapeHtml(p.gradYear) + ' 級</span>' +
+      '<span class="tag">' + escapeHtml(gradYearLabel(p.gradYear, true)) + '</span>' +
       '<strong style="font-size:15px;color:#1c2733">' + escapeHtml(p.displayName) + '</strong>' +
       (p.mainPath ? '<span class="tag gray">' + escapeHtml(p.mainPath) + '</span>' : '') +
       (p.willingQa ? '<span class="tag ok">願意回答提問</span>' : '') +

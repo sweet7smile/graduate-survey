@@ -123,7 +123,7 @@ function renderEditHeader(res) {
 /** 回傳 { values:[實際存入的值], labels:[畫面顯示文字] } */
 function optionListOf(key) {
   if (key === '__GRAD_YEARS') {
-    return { values: CFG.gradYears.slice(), labels: CFG.gradYears.map(y => y + ' 學年度') };
+    return { values: CFG.gradYears.slice(), labels: CFG.gradYears.map(y => gradYearLabel(y)) };
   }
   if (key === '__DIFFICULTY') {
     return { values: ['1', '2', '3', '4', '5'], labels: DIFFICULTY };

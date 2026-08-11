@@ -61,7 +61,7 @@
     <table class="data">
       <thead>
         <tr>
-          <th>編號</th><th>學年度</th><th>姓名</th><th>班級</th>
+          <th>編號</th><th>畢業年份</th><th>姓名</th><th>班級</th>
           <th>最終落點</th><th>公開層級</th>
           <th>校系</th><th>口試</th><th>術科</th><th>相片</th>
           <th>狀態</th><th>操作</th>
@@ -238,7 +238,7 @@ function buildYearFilter() {
   el.innerHTML = '<option value="">全部年度</option>';
   years.forEach(function (y) {
     const o = document.createElement('option');
-    o.value = y; o.textContent = y + ' 學年度';
+    o.value = y; o.textContent = gradYearLabel(y, true);
     el.appendChild(o);
   });
   el.value = keep;
@@ -278,7 +278,7 @@ function renderTable() {
                      : (x.publishLevel.indexOf('匿名') === 0 ? '匿名' : '不公開');
     return '<tr>' +
       '<td><code>' + escapeHtml(x.code) + '</code></td>' +
-      '<td class="num">' + escapeHtml(x.gradYear) + '</td>' +
+      '<td class="num">' + escapeHtml(gradYearLabel(x.gradYear, true)) + '</td>' +
       '<td><strong>' + escapeHtml(x.name) + '</strong></td>' +
       '<td>' + escapeHtml(x.className) + '</td>' +
       '<td>' + escapeHtml(x.currentPlace) + '</td>' +
@@ -358,8 +358,8 @@ function openDelete(submissionId) {
   DEL_TARGET = rec;
 
   document.getElementById('delSummary').innerHTML =
-    '<strong>' + escapeHtml(rec.name) + '</strong>（' + escapeHtml(rec.gradYear) +
-    ' 學年度 · 編號 ' + escapeHtml(rec.code) + '）<br>' +
+    '<strong>' + escapeHtml(rec.name) + '</strong>（' + escapeHtml(gradYearLabel(rec.gradYear, true)) +
+    ' · 編號 ' + escapeHtml(rec.code) + '）<br>' +
     '校系 ' + rec.counts.adm + ' 筆　口試 ' + rec.counts.itv + ' 題　術科 ' +
     rec.counts.prc + ' 項　相片 ' + rec.counts.file + ' 張' +
     (rec.reviewStatus === '通過' ? '<br>⚠️ 這筆<strong>已審核通過</strong>，刪除前請再確認。' : '');
@@ -522,7 +522,7 @@ function openEditHistory() {
 function renderDetail(rec) {
   const m = rec.main;
   document.getElementById('mTitle').textContent =
-    m.name + '（' + m.grad_year + ' 學年度 · 編號 ' +
+    m.name + '（' + gradYearLabel(m.grad_year, true) + ' · 編號 ' +
     String(m.submission_id).substring(0, 6).toUpperCase() + '）';
 
   FIELD_VALUES = {};

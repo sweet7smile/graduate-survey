@@ -374,6 +374,20 @@ function getGradYears_() {
 }
 
 
+/**
+ * 伺服器端版本，邏輯跟 common.html 的 gradYearLabel() 完全一致
+ * （寄信、重複提交的錯誤訊息這些後端組字串的地方要用）。
+ * 兩邊各自維護是因為前端跑在瀏覽器、後端跑在 Apps Script，
+ * 沒辦法共用同一份 JS，但公式本身很單純，維持一致不難。
+ */
+function gradYearLabel_(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
+
 /** 傳給前端的設定（不含任何機密資訊） */
 function getClientConfig() {
   return {

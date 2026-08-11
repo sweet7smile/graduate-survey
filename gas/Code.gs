@@ -301,7 +301,7 @@ function submitForm(payload) {
     if (CONFIG.BLOCK_DUPLICATE) {
       const dup = findDuplicate_(main.email, main.grad_year);
       if (dup) {
-        return fail_('這個 Email 在 ' + main.grad_year + ' 學年度已經填過了（提交編號 ' +
+        return fail_('這個 Email 在「' + gradYearLabel_(main.grad_year) + '」已經填過了（提交編號 ' +
                      dup + '）。如需修改，請聯絡 ' + CONFIG.CONTACT_NAME + ' 承辦老師。');
       }
     }
@@ -589,7 +589,7 @@ function writeLog_(level, submissionId, message, detail) {
  */
 function sendMails_(main, shortId, admCount, itvCount, prcCount) {
   const summary =
-    '畢業學年度：' + main.grad_year + ' 學年度\n' +
+    '畢業學年度：' + gradYearLabel_(main.grad_year) + '\n' +
     '姓名：' + main.name + '\n' +
     '目前就讀／服務：' + main.current_place + '\n' +
     '主要出路：' + main.main_path + '\n' +
@@ -604,7 +604,7 @@ function sendMails_(main, shortId, admCount, itvCount, prcCount) {
   if (canNotify) {
     MailApp.sendEmail({
       to: CONFIG.NOTIFY_EMAIL,
-      subject: '[畢業生資料] 新提交 — ' + main.name + '（' + main.grad_year + ' 學年度）',
+      subject: '[畢業生資料] 新提交 — ' + main.name + '（' + gradYearLabel_(main.grad_year, true) + '）',
       body: summary + '\n\n公開層級：' + main.publish_level +
             '\n聯絡 Email：' + main.email +
             '\n\n試算表：https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID + '/edit'

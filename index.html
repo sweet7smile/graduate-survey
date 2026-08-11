@@ -1281,6 +1281,20 @@ function getGradYears_() {
 }
 
 
+/**
+ * 伺服器端版本，邏輯跟 common.html 的 gradYearLabel() 完全一致
+ * （寄信、重複提交的錯誤訊息這些後端組字串的地方要用）。
+ * 兩邊各自維護是因為前端跑在瀏覽器、後端跑在 Apps Script，
+ * 沒辦法共用同一份 JS，但公式本身很單純，維持一致不難。
+ */
+function gradYearLabel_(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
+
 /** 傳給前端的設定（不含任何機密資訊） */
 function getClientConfig() {
   return {
@@ -1447,6 +1461,26 @@ function renderNav(active) {
   document.body.insertBefore(nav, document.body.firstChild);
 }
 
+/**
+ * 畢業學年度（後端存的原始值，例如 '114'）→ 使用者看得懂的畢業年份文字。
+ *
+ * 台灣的學年度從當年 8 月算到隔年 7 月，114 學年度的應屆生是民國 115 年
+ * 6 月畢業的——直接顯示「114學年度」常讓人誤以為是民國 114 年畢業，
+ * 學生反映這點造成困擾，所以改成明講「民國 115 年畢業」。
+ *
+ * 只改這裡的「顯示文字」，後端存的 grad_year 值仍是原本的學年度數字
+ * （114、113…），跟舊資料、重複提交檢查、Drive 資料夾都不衝突。
+ *
+ * @param {string|number} academicYear 學年度數字
+ * @param {boolean} short 為 true 時省略「民國」前綴，用於表格欄位、標籤這類空間有限的地方
+ */
+function gradYearLabel(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1593,7 +1627,7 @@ function renderEditHeader(res) {
 /** 回傳 { values:[實際存入的值], labels:[畫面顯示文字] } */
 function optionListOf(key) {
   if (key === '__GRAD_YEARS') {
-    return { values: CFG.gradYears.slice(), labels: CFG.gradYears.map(y => y + ' 學年度') };
+    return { values: CFG.gradYears.slice(), labels: CFG.gradYears.map(y => gradYearLabel(y)) };
   }
   if (key === '__DIFFICULTY') {
     return { values: ['1', '2', '3', '4', '5'], labels: DIFFICULTY };

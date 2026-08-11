@@ -550,7 +550,7 @@ table.data td.num { text-align: center; color: var(--muted); }
     <table class="data">
       <thead>
         <tr>
-          <th>編號</th><th>學年度</th><th>姓名</th><th>班級</th>
+          <th>編號</th><th>畢業年份</th><th>姓名</th><th>班級</th>
           <th>最終落點</th><th>公開層級</th>
           <th>校系</th><th>口試</th><th>術科</th><th>相片</th>
           <th>狀態</th><th>操作</th>
@@ -1010,6 +1010,20 @@ function getGradYears_() {
 }
 
 
+/**
+ * 伺服器端版本，邏輯跟 common.html 的 gradYearLabel() 完全一致
+ * （寄信、重複提交的錯誤訊息這些後端組字串的地方要用）。
+ * 兩邊各自維護是因為前端跑在瀏覽器、後端跑在 Apps Script，
+ * 沒辦法共用同一份 JS，但公式本身很單純，維持一致不難。
+ */
+function gradYearLabel_(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
+
 /** 傳給前端的設定（不含任何機密資訊） */
 function getClientConfig() {
   return {
@@ -1176,6 +1190,26 @@ function renderNav(active) {
   document.body.insertBefore(nav, document.body.firstChild);
 }
 
+/**
+ * 畢業學年度（後端存的原始值，例如 '114'）→ 使用者看得懂的畢業年份文字。
+ *
+ * 台灣的學年度從當年 8 月算到隔年 7 月，114 學年度的應屆生是民國 115 年
+ * 6 月畢業的——直接顯示「114學年度」常讓人誤以為是民國 114 年畢業，
+ * 學生反映這點造成困擾，所以改成明講「民國 115 年畢業」。
+ *
+ * 只改這裡的「顯示文字」，後端存的 grad_year 值仍是原本的學年度數字
+ * （114、113…），跟舊資料、重複提交檢查、Drive 資料夾都不衝突。
+ *
+ * @param {string|number} academicYear 學年度數字
+ * @param {boolean} short 為 true 時省略「民國」前綴，用於表格欄位、標籤這類空間有限的地方
+ */
+function gradYearLabel(academicYear, short) {
+  const y = Number(academicYear);
+  if (!y || isNaN(y)) return String(academicYear == null ? '' : academicYear);
+  const rocGradYear = y + 1;
+  return (short ? '' : '民國') + rocGradYear + '年畢業';
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1285,7 +1319,7 @@ function buildYearFilter() {
   el.innerHTML = '<option value="">全部年度</option>';
   years.forEach(function (y) {
     const o = document.createElement('option');
-    o.value = y; o.textContent = y + ' 學年度';
+    o.value = y; o.textContent = gradYearLabel(y, true);
     el.appendChild(o);
   });
   el.value = keep;
@@ -1325,7 +1359,7 @@ function renderTable() {
                      : (x.publishLevel.indexOf('匿名') === 0 ? '匿名' : '不公開');
     return '<tr>' +
       '<td><code>' + escapeHtml(x.code) + '</code></td>' +
-      '<td class="num">' + escapeHtml(x.gradYear) + '</td>' +
+      '<td class="num">' + escapeHtml(gradYearLabel(x.gradYear, true)) + '</td>' +
       '<td><strong>' + escapeHtml(x.name) + '</strong></td>' +
       '<td>' + escapeHtml(x.className) + '</td>' +
       '<td>' + escapeHtml(x.currentPlace) + '</td>' +
@@ -1405,8 +1439,8 @@ function openDelete(submissionId) {
   DEL_TARGET = rec;
 
   document.getElementById('delSummary').innerHTML =
-    '<strong>' + escapeHtml(rec.name) + '</strong>（' + escapeHtml(rec.gradYear) +
-    ' 學年度 · 編號 ' + escapeHtml(rec.code) + '）<br>' +
+    '<strong>' + escapeHtml(rec.name) + '</strong>（' + escapeHtml(gradYearLabel(rec.gradYear, true)) +
+    ' · 編號 ' + escapeHtml(rec.code) + '）<br>' +
     '校系 ' + rec.counts.adm + ' 筆　口試 ' + rec.counts.itv + ' 題　術科 ' +
     rec.counts.prc + ' 項　相片 ' + rec.counts.file + ' 張' +
     (rec.reviewStatus === '通過' ? '<br>⚠️ 這筆<strong>已審核通過</strong>，刪除前請再確認。' : '');
@@ -1569,7 +1603,7 @@ function openEditHistory() {
 function renderDetail(rec) {
   const m = rec.main;
   document.getElementById('mTitle').textContent =
-    m.name + '（' + m.grad_year + ' 學年度 · 編號 ' +
+    m.name + '（' + gradYearLabel(m.grad_year, true) + ' · 編號 ' +
     String(m.submission_id).substring(0, 6).toUpperCase() + '）';
 
   FIELD_VALUES = {};

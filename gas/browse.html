@@ -134,12 +134,12 @@ function uniqueSorted(arr) {
   });
 }
 
-function fillSelect(id, values, allLabel) {
+function fillSelect(id, values, allLabel, labelFn) {
   const el = document.getElementById(id);
   el.innerHTML = '<option value="">' + allLabel + '</option>';
   values.forEach(function (v) {
     const o = document.createElement('option');
-    o.value = v; o.textContent = v;
+    o.value = v; o.textContent = labelFn ? labelFn(v) : v;
     el.appendChild(o);
   });
 }
@@ -149,7 +149,7 @@ function buildFilters() {
   fillSelect('fUniv', uniqueSorted(all.map(function (x) { return x.univ; })), '全部學校');
   fillSelect('fMajor', uniqueSorted(all.map(function (x) { return x.major; })), '全部科系');
   fillSelect('fYear', uniqueSorted(DATA.people.map(function (p) { return p.gradYear; }))
-    .map(String), '全部年度');
+    .map(String), '全部年度', function (y) { return gradYearLabel(y, true); });
   const cats = [];
   DATA.questions.forEach(function (q) { (q.categories || []).forEach(function (c) { cats.push(c); }); });
   fillSelect('fCat', uniqueSorted(cats), '全部分類');
@@ -254,7 +254,7 @@ function questionCard(q) {
       '<span class="tag gray">' + escapeHtml(q.major) + '</span>' +
       (q.format ? '<span>' + escapeHtml(q.format) + '</span>' : '') +
       (stars ? '<span>' + stars + '</span>' : '') +
-      '<span>' + escapeHtml(yearOf(q.key)) + ' 級</span>' +
+      '<span>' + escapeHtml(gradYearLabel(yearOf(q.key), true)) + '</span>' +
       (q.categories || []).map(function (c) {
         return '<span class="tag warn">' + escapeHtml(c) + '</span>';
       }).join('') +
@@ -273,7 +273,7 @@ function practicalCard(p) {
       '<span class="tag gray">' + escapeHtml(p.major) + '</span>' +
       (p.subject ? '<span class="tag warn">' + escapeHtml(p.subject) + '</span>' : '') +
       (p.durationMin ? '<span>' + escapeHtml(p.durationMin) + ' 分鐘</span>' : '') +
-      '<span>' + escapeHtml(yearOf(p.key)) + ' 級</span>' +
+      '<span>' + escapeHtml(gradYearLabel(yearOf(p.key), true)) + '</span>' +
     '</div>' +
     '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
     (p.equipment ? '<div class="q-extra"><b>現場設備／工具：</b>\n' + escapeHtml(p.equipment) + '</div>' : '') +
@@ -302,7 +302,7 @@ function personCard(p) {
   const adms = DATA.admissions.filter(function (a) { return a.key === p.key; });
   return '<div class="q-card">' +
     '<div class="q-meta">' +
-      '<span class="tag">' + escapeHtml(p.gradYear) + ' 級</span>' +
+      '<span class="tag">' + escapeHtml(gradYearLabel(p.gradYear, true)) + '</span>' +
       '<strong style="font-size:15px;color:#1c2733">' + escapeHtml(p.displayName) + '</strong>' +
       (p.mainPath ? '<span class="tag gray">' + escapeHtml(p.mainPath) + '</span>' : '') +
       (p.willingQa ? '<span class="tag ok">願意回答提問</span>' : '') +
