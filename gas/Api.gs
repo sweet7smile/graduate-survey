@@ -728,7 +728,14 @@ function adminExport_(req) {
 
   const esc = function (v) {
     if (v instanceof Date) v = Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
-    const s = String(v == null ? '' : v);
+    let s = String(v == null ? '' : v);
+
+    // CSV 公式注入防護：學生自由填寫的文字若剛好以 = + - @ 開頭
+    // （例如「-1 分很不合理」「=心得」這類正常語句都可能撞到），
+    // Excel/Sheets 開啟時會被當成公式執行。前面補一個跳脫字元 '
+    // 讓它強制顯示為文字，不影響 Sheet 裡的原始資料，只影響匯出的這份 CSV。
+    if (/^[=+\-@]/.test(s)) s = "'" + s;
+
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
 

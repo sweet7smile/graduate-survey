@@ -594,6 +594,13 @@ const CONFIG = {
   LOCK_AFTER_APPROVED: true,          // 審核「通過」後畢業生不能再修改
   BROWSE_REQUIRE_APPROVED: true,      // 瀏覽頁只顯示審核通過的資料
 
+  // 教師登入失敗鎖定：/exec 網址寫在公開的 config.js 裡，任何人都找得到，
+  // 這是暴力破解教師帳號的第一道防線。單一帳號用全站共用計數器即可，
+  // 不需要也無法可靠地按 IP 區分（Apps Script 拿不到穩定的來源 IP）。
+  TEACHER_LOGIN_MAX_FAILS: 8,         // 連續失敗幾次觸發鎖定
+  TEACHER_LOGIN_WINDOW_MIN: 15,       // 失敗計數多久沒動作就自動歸零
+  TEACHER_LOGIN_LOCKOUT_MIN: 10,      // 鎖定持續時間
+
   // ── 刪除 ────────────────────────────────────────────────
   // false（預設）：相片搬到「_已刪除」資料夾，誤刪救得回來
   // true          ：相片直接丟進雲端硬碟垃圾桶（30 天後由 Google 永久清除）

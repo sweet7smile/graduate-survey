@@ -139,8 +139,27 @@ function requireRole_(token, role) {
 //  登入
 // ═══════════════════════════════════════════════════════════
 
-/** 教師登入：帳號 + 密碼 */
+const TEACHER_LOCK_KEY = 'teacher_login_lockout';
+const TEACHER_FAIL_KEY = 'teacher_login_fails';
+
+/**
+ * 教師登入：帳號 + 密碼。
+ *
+ * 連續失敗會觸發暫時鎖定 —— /exec 網址寫在公開的 config.js 裡，
+ * 任何人都找得到這個登入端點，光靠 0.6 秒延遲不足以擋住腳本化的
+ * 暴力嘗試。鎖定用全站共用的 CacheService 計數器，不分帳號來源，
+ * 因為本系統就只有一個教師帳號，也拿不到可靠的來源 IP 可供區分。
+ */
 function loginTeacher_(req) {
+  const cache = CacheService.getScriptCache();
+
+  const lockedUntil = cache.get(TEACHER_LOCK_KEY);
+  if (lockedUntil) {
+    const remainMin = Math.max(1, Math.ceil((Number(lockedUntil) - Date.now()) / 60000));
+    writeLog_('WARN', '', '教師登入：鎖定期間仍有嘗試', '帳號：' + String(req.account || ''));
+    return fail_('登入嘗試次數過多，已暫時鎖定，請約 ' + remainMin + ' 分鐘後再試。');
+  }
+
   const props = PropertiesService.getScriptProperties();
   const account = props.getProperty(PROP_KEYS.ACCOUNT);
   const salt = props.getProperty(PROP_KEYS.SALT);
@@ -158,10 +177,24 @@ function loginTeacher_(req) {
   const okPw = safeEquals_(hashPassword_(inPw, salt), hash);
   if (!okAcc || !okPw) {
     Utilities.sleep(600);   // 稍微拖慢，降低暴力嘗試效率
-    writeLog_('WARN', '', '教師登入失敗', '嘗試帳號：' + inAcc);
+
+    const fails = Number(cache.get(TEACHER_FAIL_KEY) || 0) + 1;
+    cache.put(TEACHER_FAIL_KEY, String(fails), CONFIG.TEACHER_LOGIN_WINDOW_MIN * 60);
+
+    if (fails >= CONFIG.TEACHER_LOGIN_MAX_FAILS) {
+      cache.put(TEACHER_LOCK_KEY, String(Date.now() + CONFIG.TEACHER_LOGIN_LOCKOUT_MIN * 60000),
+                CONFIG.TEACHER_LOGIN_LOCKOUT_MIN * 60);
+      cache.remove(TEACHER_FAIL_KEY);
+      writeLog_('WARN', '', '教師登入：觸發鎖定', '連續失敗 ' + fails + ' 次，鎖定 ' +
+                CONFIG.TEACHER_LOGIN_LOCKOUT_MIN + ' 分鐘');
+      return fail_('登入嘗試次數過多，已暫時鎖定 ' + CONFIG.TEACHER_LOGIN_LOCKOUT_MIN + ' 分鐘。');
+    }
+
+    writeLog_('WARN', '', '教師登入失敗', '嘗試帳號：' + inAcc + '（第 ' + fails + ' 次）');
     return fail_('帳號或密碼不正確。');
   }
 
+  cache.remove(TEACHER_FAIL_KEY);   // 登入成功，失敗計數歸零
   const token = createSession_('teacher', '', account);
   writeLog_('INFO', '', '教師登入成功', account);
   return { ok: true, token: token, role: 'teacher', label: account };
