@@ -278,6 +278,11 @@ commit + push 後，Pages 上的表單就會真的寫進你的 Sheet。
 
 - **不需登入**：部署為「執行身分＝我 + 所有人可存取」，`DriveApp` 用你的權限寫檔
 - **相片前端壓縮**：長邊 1600px、JPEG 0.8，一張約 200–400KB，避開 `google.script.run` 的 payload 上限
+- **相片分享狀態跟審核連動**：上傳當下一律是私人檔案，教師按「審核通過」時
+  `syncFilesPublicAccess_` 才把該筆的相片（只有檔案本身，不是整個資料夾）設成
+  「知道連結的人可檢視」，查詢頁才貼得出打得開的連結；退回待審、刪除、或
+  公開層級不允許時會收回權限。判斷「現在該不該公開」的邏輯只寫在
+  `isPublishable_` 一處，`browse_()` 跟權限同步共用，避免兩處各自維護
 - **CORS**：`doPost` 用 `Content-Type: text/plain` 避免觸發 preflight，
   因為 Apps Script 無法回應 `OPTIONS` 請求
 - **關聯式資料表**：口試題目一題一列，日後才做得出「依學校/科系查歷屆題目」的查詢頁

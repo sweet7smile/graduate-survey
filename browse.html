@@ -384,6 +384,14 @@ footer.bottom {
   display: inline-block; background: #e8f0f7; color: var(--brand);
   padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600;
 }
+
+/* 查詢頁的術科相片縮圖 */
+.photo-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.photo-thumb {
+  display: block; width: 92px; height: 92px; border-radius: 8px;
+  overflow: hidden; border: 1px solid var(--line); background: #f2f5f8;
+}
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .tag.gray { background: #eef1f4; color: var(--muted); }
 .tag.ok { background: #eafaf1; color: var(--ok); }
 .tag.warn { background: #fff8e8; color: #7a5600; }
@@ -1317,7 +1325,24 @@ function practicalCard(p) {
     '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
     (p.equipment ? '<div class="q-extra"><b>現場設備／工具：</b>\n' + escapeHtml(p.equipment) + '</div>' : '') +
     (p.prepAdvice ? '<div class="q-extra"><b>準備方式建議：</b>\n' + escapeHtml(p.prepAdvice) + '</div>' : '') +
+    (p.photos && p.photos.length ? photoThumbs(p.photos) : '') +
   '</div>';
+}
+
+/** 相片縮圖列：Drive 直連圖檔沒有現成的縮圖網址，用原圖當縮圖、點了開新分頁看原尺寸 */
+function photoThumbs(photos) {
+  return '<div class="photo-row">' + photos.map(function (f) {
+    const direct = driveDirectImageUrl(f.url);
+    return '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener" class="photo-thumb">' +
+      '<img src="' + escapeHtml(direct) + '" alt="' + escapeHtml(f.name) + '" loading="lazy">' +
+      '</a>';
+  }).join('') + '</div>';
+}
+
+/** 把 Drive 的「檢視」網址轉成可以直接當 <img src> 用的縮圖網址 */
+function driveDirectImageUrl(viewUrl) {
+  const m = /\/d\/([^/]+)/.exec(String(viewUrl || ''));
+  return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400' : viewUrl;
 }
 
 function personCard(p) {

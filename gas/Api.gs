@@ -448,6 +448,21 @@ function adminReview_(req) {
       }
     }
 
+    // 相片分享狀態要跟審核結果同步：通過才開放連結，其餘一律收回。
+    // 用 try/catch 包起來，就算 Drive 端出狀況也不該讓已經寫入成功的
+    // 審核結果被回報成失敗——這是附帶的同步動作，不是審核本身。
+    try {
+      const nowPublic = isPublishable_(status, String(row.data.publish_level || ''));
+      const sync = syncFilesPublicAccess_(req.submissionId, nowPublic);
+      if (sync.changed || sync.missing) {
+        writeLog_('INFO', req.submissionId, '同步相片分享狀態',
+          (nowPublic ? '開放' : '收回') + '：' + sync.changed + ' 張成功' +
+          (sync.missing ? '，' + sync.missing + ' 張在雲端硬碟已不存在' : ''));
+      }
+    } catch (shareErr) {
+      writeLog_('WARN', req.submissionId, '同步相片分享狀態失敗（審核結果已照常更新）', String(shareErr));
+    }
+
     return { ok: true, message: '已標記為「' + status + '」。' };
   } catch (e) {
     writeLog_('ERROR', req.submissionId, '審核失敗', String(e && e.stack ? e.stack : e));
@@ -657,6 +672,11 @@ function disposeFiles_(fileRows, gradYear, name, shortId) {
       return;
     }
 
+    // 若這筆先前審核通過過、相片曾被公開分享，刪除前先收回權限。
+    // 硬刪除會直接進垃圾桶、軟刪除則搬去「_已刪除」資料夾，
+    // 兩種情況都不該讓已經失效的資料留著「知道連結即可看」的狀態。
+    try { file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE); } catch (ignore) {}
+
     if (hard) {
       file.setTrashed(true);
       movedFiles++;
@@ -695,6 +715,42 @@ function disposeFiles_(fileRows, gradYear, name, shortId) {
   if (missing) parts.push('有 ' + missing + ' 張在雲端硬碟已不存在');
 
   return { message: parts.join('，') + '。' };
+}
+
+
+/**
+ * 依「現在是否該公開」同步這筆提交的 Drive 相片分享狀態。
+ *
+ * 上傳當下相片一律是私人檔案（只有你自己看得到），審核通過後才會被
+ * browse_() 列出連結——所以要在審核通過的當下，把 Drive 端也真的打開
+ * 「知道連結的人可檢視」，不然連結給了也打不開。反過來，退回待審或
+ * 退件時要把分享收回去，因為此時 browse_() 已經不會再列出這筆資料。
+ *
+ * 只設定「檔案本身」的分享，不是整個資料夾——這樣同一個學生資料夾裡
+ * 尚未審核、或選擇不公開的其他志願相片，不會被連帶公開。
+ */
+function syncFilesPublicAccess_(submissionId, makePublic) {
+  const rows = readSheetObjects_(CONFIG.SHEETS.FILES, SCHEMA.FILES)
+    .filter(function (r) { return String(r.data.submission_id) === String(submissionId); });
+  if (!rows.length) return { changed: 0, missing: 0 };
+
+  let changed = 0, missing = 0;
+  rows.forEach(function (r) {
+    let file;
+    try {
+      file = DriveApp.getFileById(String(r.data.file_id));
+    } catch (e) {
+      missing++;   // 檔案已經不存在（例如先前被手動刪除），略過即可
+      return;
+    }
+    if (makePublic) {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } else {
+      file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+    }
+    changed++;
+  });
+  return { changed: changed, missing: missing };
 }
 
 
@@ -762,11 +818,25 @@ function adminExport_(req) {
  * 學弟妹查詢用。只回傳審核通過且同意公開的資料，
  * 且一律不含 Email、手機、社群帳號與完整提交編號。
  */
+/**
+ * 判斷一筆提交「現在」是否該被公開 —— browse_() 過濾清單，
+ * 以及審核時要不要開放 Drive 相片分享，都靠這個函式判斷，
+ * 只寫一份邏輯，不然日後改一邊會忘了改另一邊。
+ */
+function isPublishable_(status, level) {
+  if (CONFIG.BROWSE_REQUIRE_APPROVED && String(status || '').trim() !== '通過') return false;
+  // 「僅供校內教師參考，不公開」這個選項已從表單移除，但這段過濾必須保留：
+  // 下架選項不會改變已存檔的值，拿掉這行會讓當初選過的人資料突然被公開。
+  if (String(level || '').indexOf('僅供校內教師') === 0) return false;
+  return true;
+}
+
 function browse_(req) {
   const mains = readSheetObjects_(CONFIG.SHEETS.MAIN, SCHEMA.MAIN);
   const itvs = readSheetObjects_(CONFIG.SHEETS.INTERVIEW, SCHEMA.INTERVIEW);
   const prcs = readSheetObjects_(CONFIG.SHEETS.PRACTICAL, SCHEMA.PRACTICAL);
   const adms = readSheetObjects_(CONFIG.SHEETS.ADMISSIONS, SCHEMA.ADMISSIONS);
+  const files = readSheetObjects_(CONFIG.SHEETS.FILES, SCHEMA.FILES);
 
   const visible = {};
   const people = [];
@@ -776,11 +846,7 @@ function browse_(req) {
     const status = String(d.review_status || '').trim();
     const level = String(d.publish_level || '');
 
-    if (CONFIG.BROWSE_REQUIRE_APPROVED && status !== '通過') return;
-
-    // 「僅供校內教師參考，不公開」這個選項已從表單移除，但這段過濾必須保留：
-    // 下架選項不會改變已存檔的值，拿掉這行會讓當初選過的人資料突然被公開。
-    if (level.indexOf('僅供校內教師') === 0) return;
+    if (!isPublishable_(status, level)) return;
 
     const anonymous = level.indexOf('匿名') === 0;
     const id = String(d.submission_id);
@@ -828,14 +894,36 @@ function browse_(req) {
     };
   });
 
+  // 相片：只有在這筆提交「現在」符合公開條件時才附連結，且 Drive 端的分享
+  // 設定要真的已開放（由 adminReview_ 審核通過時觸發 syncFilesPublicAccess_），
+  // 兩者對不上的話連結會打不開。
+  const filesBySubmission = {};
+  pick(files).forEach(function (f) {
+    const key = String(f.submission_id);
+    (filesBySubmission[key] = filesBySubmission[key] || []).push(f);
+  });
+
+  // 同一筆提交、同一個志願底下的術科，要依「寫入當下的順序」重建 1-based 序號，
+  // 才對得上 Files.prc_idx —— 那個序號就是當初寫入時用同一個順序分配的。
+  const prcOrdinal = {};
   const practicals = pick(prcs).map(function (p) {
+    const subId = String(p.submission_id);
+    const admIdx = Number(p.admission_idx);
+    const gk = subId + '|' + admIdx;
+    prcOrdinal[gk] = (prcOrdinal[gk] || 0) + 1;
+    const myPrcIdx = prcOrdinal[gk];
+
+    const photos = (filesBySubmission[subId] || [])
+      .filter(function (f) { return Number(f.ref_idx) === admIdx && Number(f.prc_idx) === myPrcIdx; })
+      .map(function (f) { return { name: String(f.file_name), url: String(f.file_url) }; });
+
     return {
-      key: String(p.submission_id).substring(0, 6).toUpperCase(),
+      key: subId.substring(0, 6).toUpperCase(),
       univ: String(p.univ || ''), major: String(p.major || ''),
       subject: String(p.subject || ''), durationMin: String(p.duration_min || ''),
       content: String(p.content || ''), equipment: String(p.equipment || ''),
-      prepAdvice: String(p.prep_advice || '')
-      // 刻意不含相片連結：Drive 檔案未對外開放，給了也打不開
+      prepAdvice: String(p.prep_advice || ''),
+      photos: photos
     };
   });
 
