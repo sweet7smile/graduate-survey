@@ -97,6 +97,8 @@ function routeApi_(req) {
     case 'adminList':    return adminList_(req);
     case 'adminDetail':  return adminDetail_(req);
     case 'adminReview':  return adminReview_(req);
+    case 'adminEditField':  return adminEditField_(req);
+    case 'adminEditHistory': return adminEditHistory_(req);
     case 'adminDelete':  return adminDelete_(req);
     case 'adminExport':  return adminExport_(req);
     case 'browse':       return browse_(req);

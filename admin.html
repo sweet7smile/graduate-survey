@@ -452,6 +452,27 @@ table.data td.num { text-align: center; color: var(--muted); }
 .btn-submit.danger:disabled {
   background: #b9c4d0; box-shadow: none; cursor: not-allowed;
 }
+
+/* 教師可編輯欄位（心得、建議、口試回答等自述文字） */
+.ef { margin-bottom: 12px; }
+.ef-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.ef-head > span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.ef-edit { padding: 3px 9px; font-size: 12px; }
+.ef-view {
+  font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  padding: 8px 10px; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px;
+  min-height: 1.6em;
+}
+.ef-empty { color: var(--muted); font-style: italic; }
+.ef-editing .ef-textarea {
+  width: 100%; font-family: inherit; font-size: 14px; line-height: 1.6;
+  padding: 8px 10px; border: 1px solid var(--brand-light); border-radius: 8px;
+  resize: vertical;
+}
+.ef-actions { display: flex; gap: 6px; margin-top: 6px; }
 </style>
 
 </head>
@@ -537,6 +558,9 @@ table.data td.num { text-align: center; color: var(--muted); }
       <button type="button" class="btn-ghost" onclick="closeModal()">關閉</button>
     </div>
     <div id="mBody"></div>
+    <div style="text-align:right;margin-top:6px">
+      <button type="button" class="btn-ghost" id="btnEditHistory">📜 查看修改紀錄</button>
+    </div>
     <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:14px">
       <div class="field">
         <label>審核意見<span class="sub">退回修改時會一併寄給學生</span></label>
@@ -655,6 +679,7 @@ const CONFIG = {
     INTERVIEW: 'Interview',
     PRACTICAL: 'Practical',
     FILES: 'Files',
+    EDITS: 'Edits',
     CONFIG: 'Config',
     LOG: 'Log'
   }
@@ -839,7 +864,33 @@ const SCHEMA = {
     { key: 'submission_id',  label: '提交編號' },
     { key: 'message',        label: '訊息' },
     { key: 'detail',         label: '細節' }
+  ],
+
+  // 教師修飾學生自述文字的紀錄。保留原文，避免日後有爭議時查無依據。
+  EDITS: [
+    { key: 'timestamp',      label: '時間' },
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'field_path',     label: '欄位' },
+    { key: 'old_value',      label: '修改前' },
+    { key: 'new_value',      label: '修改後' },
+    { key: 'edited_by',      label: '編輯者' }
   ]
+};
+
+
+/**
+ * 教師後台開放編輯的欄位白名單。
+ *
+ * 刻意只收「學生自由填寫的自述文字」——心得、建議、口試回答這類，
+ * 這正是用詞太直接、可能出現不當內容的地方。
+ * 學校名稱、錄取結果、公開層級這類結構化或事實欄位不開放，
+ * 改了不是「修飾用詞」，是竄改紀錄。
+ */
+const EDITABLE_FIELDS = {
+  main: ['reflection', 'advice_1', 'advice_2', 'advice_3', 'do_earlier', 'regret',
+         'experiences', 'activities', 'portfolio_focus'],
+  itv: ['question', 'my_answer', 'better_answer', 'tip'],
+  prc: ['content', 'equipment', 'prep_advice']
 };
 
 
@@ -873,7 +924,8 @@ const LAYOUT = {
     prep_advice: 270,   file_urls: 230,
     file_id: 120,       file_name: 210,    file_url: 230,
     category: 100,      ref_idx: 75,       uploaded_at: 135,
-    timestamp: 135,     level: 70,         message: 330,   detail: 330
+    timestamp: 135,     level: 70,         message: 330,   detail: 330,
+    field_path: 140,    old_value: 320,    new_value: 320, edited_by: 100
   },
 
   // 凍結欄數：橫向捲動時保留辨識用的前幾欄
@@ -883,7 +935,8 @@ const LAYOUT = {
     INTERVIEW: 4,
     PRACTICAL: 4,
     FILES: 1,
-    LOG: 2
+    LOG: 2,
+    EDITS: 2
   }
 };
 
@@ -1134,7 +1187,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // 不能直接指定 load，否則事件物件會被當成 keepBanner 傳進去（truthy）
   document.getElementById('btnReload').onclick = function () { load(); };
   document.getElementById('btnExport').onclick = doExport;
+  document.getElementById('btnEditHistory').onclick = openEditHistory;
   bindDelete();
+  bindEditableFields();
 
   load();
 });
@@ -1365,12 +1420,122 @@ function kv(pairs) {
   }).join('') + '</dl>';
 }
 
+
+/* ── 可編輯欄位（教師修飾學生自述文字用）──────────────── */
+/* FIELD_VALUES 存原始文字（不含 HTML 跳脫），編輯/取消時從這裡讀回 */
+let FIELD_VALUES = {};
+
+function efView(value) {
+  return value ? escapeHtml(value).replace(/\n/g, '<br>') : '<span class="ef-empty">（空白）</span>';
+}
+
+function ef(path, label, value) {
+  FIELD_VALUES[path] = value || '';
+  return '<div class="ef" data-path="' + escapeHtml(path) + '">' +
+    '<div class="ef-head"><span>' + escapeHtml(label) + '</span>' +
+    '<button type="button" class="btn-sm ef-edit" data-path="' + escapeHtml(path) + '">✏️ 編輯</button></div>' +
+    '<div class="ef-view">' + efView(value) + '</div>' +
+  '</div>';
+}
+
+function bindEditableFields() {
+  const body = document.getElementById('mBody');
+
+  body.addEventListener('click', function (e) {
+    const editBtn = e.target.closest('.ef-edit');
+    if (editBtn) { startEditField(editBtn.dataset.path); return; }
+    const saveBtn = e.target.closest('.ef-save');
+    if (saveBtn) { saveEditField(saveBtn.dataset.path); return; }
+    const cancelBtn = e.target.closest('.ef-cancel');
+    if (cancelBtn) { renderFieldView(cancelBtn.dataset.path); return; }
+  });
+}
+
+function startEditField(path) {
+  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
+  if (!box) return;
+  const value = FIELD_VALUES[path] || '';
+  box.querySelector('.ef-view').outerHTML =
+    '<div class="ef-editing">' +
+      '<textarea class="ef-textarea" rows="4">' + escapeHtml(value) + '</textarea>' +
+      '<div class="ef-actions">' +
+        '<button type="button" class="btn-sm ok ef-save" data-path="' + escapeHtml(path) + '">💾 儲存</button>' +
+        '<button type="button" class="btn-sm ef-cancel" data-path="' + escapeHtml(path) + '">取消</button>' +
+      '</div>' +
+    '</div>';
+  const ta = box.querySelector('.ef-textarea');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function renderFieldView(path) {
+  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
+  if (!box) return;
+  box.querySelector('.ef-editing').outerHTML = '<div class="ef-view">' + efView(FIELD_VALUES[path]) + '</div>';
+}
+
+function saveEditField(path) {
+  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
+  const ta = box.querySelector('.ef-textarea');
+  const btn = box.querySelector('.ef-save');
+  const newValue = ta.value;
+
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  api('adminEditField', {
+    token: token(), submissionId: CURRENT.submissionId, path: path, value: newValue
+  })
+    .then(function (res) {
+      if (handleAuthFail(res)) return;
+      if (!res.ok) {
+        alert(res.message || '儲存失敗');
+        btn.disabled = false; btn.textContent = '💾 儲存';
+        return;
+      }
+      FIELD_VALUES[path] = newValue;
+      renderFieldView(path);
+      showBanner('#msgBox', res.unchanged ? '內容沒有變化。' : '已儲存修改：' + path, 'ok');
+    })
+    .catch(function (e) {
+      alert('連線失敗：' + e);
+      btn.disabled = false; btn.textContent = '💾 儲存';
+    });
+}
+
+/** querySelector 用的簡易跳脫（避免 path 裡的特殊字元弄壞選擇器） */
+function cssEscape(s) {
+  return String(s).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
+}
+
+
+/* ── 修改紀錄 ─────────────────────────── */
+
+function openEditHistory() {
+  if (!CURRENT) return;
+  api('adminEditHistory', { token: token(), submissionId: CURRENT.submissionId })
+    .then(function (res) {
+      if (handleAuthFail(res)) return;
+      if (!res.ok) { alert(res.message || '載入失敗'); return; }
+      if (!res.edits.length) { alert('這筆資料還沒有任何修改紀錄。'); return; }
+
+      const text = res.edits.map(function (e) {
+        return '【' + e.at.replace('T', ' ').slice(0, 16) + '】' + e.editor + ' 修改了 ' + e.path +
+               '\n原文：' + (e.oldValue || '（空）') +
+               '\n改為：' + (e.newValue || '（空）');
+      }).join('\n\n');
+      alert('修改紀錄（' + res.edits.length + ' 筆，最新在前）\n\n' + text);
+    })
+    .catch(function (e) { alert('連線失敗：' + e); });
+}
+
 function renderDetail(rec) {
   const m = rec.main;
   document.getElementById('mTitle').textContent =
     m.name + '（' + m.grad_year + ' 學年度 · 編號 ' +
     String(m.submission_id).substring(0, 6).toUpperCase() + '）';
 
+  FIELD_VALUES = {};
   let html = '';
 
   html += '<div class="detail-sec"><h4>基本資料</h4>' + kv([
@@ -1380,11 +1545,13 @@ function renderDetail(rec) {
     ['報考群類', m.exam_group],
     ['統測總分', m.tve_total], ['班排', m.rank_pct],
     ['證照', (m.certificates || []).join('、')],
-    ['競賽/專題', m.experiences], ['幹部社團', m.activities],
     ['公開層級', m.publish_level],
     ['願意回校分享', m.willing_share ? '是' : ''],
     ['接受提問', m.willing_qa ? '是' : '']
-  ]) + '</div>';
+  ]) +
+  ef('main.experiences', '競賽/專題經歷', m.experiences) +
+  ef('main.activities', '幹部/社團/志工', m.activities) +
+  '</div>';
 
   (rec.admissions || []).forEach(function (a, i) {
     html += '<div class="detail-sec"><h4>志願 ' + (i + 1) + '：' +
@@ -1402,26 +1569,28 @@ function renderDetail(rec) {
       html += '<div style="margin-top:8px"><b style="font-size:13px">口試題目 ' +
         a.interviews.length + ' 題</b>';
       a.interviews.forEach(function (q, qi) {
+        const p = 'itv.' + (i + 1) + '.' + (qi + 1) + '.';
         html += '<div class="q-card" style="margin:6px 0">' +
           '<div class="q-meta">' + (q.categories || []).map(function (c) {
             return '<span class="tag warn">' + escapeHtml(c) + '</span>';
           }).join('') + (q.difficulty ? '<span>難度 ' + escapeHtml(q.difficulty) + '</span>' : '') + '</div>' +
-          '<div class="q-text">' + (qi + 1) + '. ' + escapeHtml(q.question) + '</div>' +
-          (q.my_answer ? '<div class="q-extra"><b>當時回答：</b>' + escapeHtml(q.my_answer) + '</div>' : '') +
-          (q.better_answer ? '<div class="q-extra"><b>回頭看：</b>' + escapeHtml(q.better_answer) + '</div>' : '') +
-          (q.tip ? '<div class="q-extra"><b>提醒：</b>' + escapeHtml(q.tip) + '</div>' : '') +
+          ef(p + 'question', '第 ' + (qi + 1) + ' 題', q.question) +
+          ef(p + 'my_answer', '當時回答', q.my_answer) +
+          ef(p + 'better_answer', '回頭看該怎麼答', q.better_answer) +
+          ef(p + 'tip', '給學弟妹的提醒', q.tip) +
         '</div>';
       });
       html += '</div>';
     }
 
-    (a.practicals || []).forEach(function (p) {
+    (a.practicals || []).forEach(function (p, pi) {
+      const pp = 'prc.' + (i + 1) + '.' + (pi + 1) + '.';
       html += '<div class="q-card" style="margin:6px 0">' +
         '<div class="q-meta"><span class="tag">' + escapeHtml(p.subject || '術科') + '</span>' +
         (p.duration_min ? '<span>' + escapeHtml(p.duration_min) + ' 分</span>' : '') + '</div>' +
-        '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
-        (p.equipment ? '<div class="q-extra"><b>設備：</b>' + escapeHtml(p.equipment) + '</div>' : '') +
-        (p.prep_advice ? '<div class="q-extra"><b>建議：</b>' + escapeHtml(p.prep_advice) + '</div>' : '') +
+        ef(pp + 'content', '題目內容', p.content) +
+        ef(pp + 'equipment', '現場提供的設備/工具', p.equipment) +
+        ef(pp + 'prep_advice', '準備方式建議', p.prep_advice) +
         ((p.existingFiles || []).length ? '<div class="q-extra"><b>相片：</b>' +
           p.existingFiles.map(function (f) {
             return '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener">' +
@@ -1435,12 +1604,16 @@ function renderDetail(rec) {
 
   html += '<div class="detail-sec"><h4>備審與心得</h4>' + kv([
     ['備審頁數', m.portfolio_pages], ['製作工具', m.portfolio_tool],
-    ['花費時數', m.portfolio_hours], ['備審重點', m.portfolio_focus],
-    ['面試問到備審', m.portfolio_asked],
-    ['整體心得', m.reflection],
-    ['建議1', m.advice_1], ['建議2', m.advice_2], ['建議3', m.advice_3],
-    ['高一高二', m.do_earlier], ['最後悔', m.regret]
-  ]) + '</div>';
+    ['花費時數', m.portfolio_hours], ['面試問到備審', m.portfolio_asked]
+  ]) +
+  ef('main.portfolio_focus', '備審重點', m.portfolio_focus) +
+  ef('main.reflection', '整體心得', m.reflection) +
+  ef('main.advice_1', '建議 1', m.advice_1) +
+  ef('main.advice_2', '建議 2', m.advice_2) +
+  ef('main.advice_3', '建議 3', m.advice_3) +
+  ef('main.do_earlier', '高一高二該先做什麼', m.do_earlier) +
+  ef('main.regret', '最後悔沒做的事', m.regret) +
+  '</div>';
 
   document.getElementById('mBody').innerHTML = html;
 }

@@ -459,6 +459,114 @@ function adminReview_(req) {
 
 
 /**
+ * 教師修飾學生自述文字（心得、建議、口試回答等）。
+ *
+ * path 格式（scope 決定要改哪張分頁的哪一列）：
+ *   'main.<field>'               例：main.reflection
+ *   'itv.<admIdx>.<qNo>.<field>'  例：itv.1.2.tip  （第 1 個志願、第 2 題）
+ *   'prc.<admIdx>.<pIdx>.<field>' 例：prc.1.1.content（第 1 個志願、第 1 個術科項目）
+ *
+ * 只接受 EDITABLE_FIELDS 白名單內的欄位，避免被拿來竄改學校名稱、
+ * 錄取結果這類結構化欄位。每次修改都記進 Edits 分頁，原文不會消失。
+ *
+ * 不受學生鎖定狀態限制 —— 這是教師修飾用詞，不是學生重新提交，
+ * 也不會改動 review_status。
+ */
+function adminEditField_(req) {
+  const sess = requireRole_(req.token, 'teacher');
+  const lock = LockService.getScriptLock();
+
+  try {
+    if (!lock.tryLock(CONFIG.LOCK_TIMEOUT_MS)) return fail_('系統忙碌中，請稍後再試。');
+
+    const path = String(req.path || '');
+    const parts = path.split('.');
+    const scope = parts[0];
+
+    let sheetName, schema, matcher, field, pIdx;
+
+    if (scope === 'main') {
+      field = parts[1];
+      if (EDITABLE_FIELDS.main.indexOf(field) < 0) return fail_('不支援編輯這個欄位。');
+      sheetName = CONFIG.SHEETS.MAIN; schema = SCHEMA.MAIN;
+      matcher = function (d) { return String(d.submission_id) === String(req.submissionId); };
+
+    } else if (scope === 'itv') {
+      const admIdx = Number(parts[1]), qNo = Number(parts[2]);
+      field = parts[3];
+      if (EDITABLE_FIELDS.itv.indexOf(field) < 0) return fail_('不支援編輯這個欄位。');
+      sheetName = CONFIG.SHEETS.INTERVIEW; schema = SCHEMA.INTERVIEW;
+      matcher = function (d) {
+        return String(d.submission_id) === String(req.submissionId) &&
+               Number(d.admission_idx) === admIdx && Number(d.q_no) === qNo;
+      };
+
+    } else if (scope === 'prc') {
+      const admIdx = Number(parts[1]);
+      pIdx = Number(parts[2]);
+      field = parts[3];
+      if (EDITABLE_FIELDS.prc.indexOf(field) < 0) return fail_('不支援編輯這個欄位。');
+      sheetName = CONFIG.SHEETS.PRACTICAL; schema = SCHEMA.PRACTICAL;
+      matcher = function (d) {
+        return String(d.submission_id) === String(req.submissionId) &&
+               Number(d.admission_idx) === admIdx;
+      };
+
+    } else {
+      return fail_('不支援的欄位路徑。');
+    }
+
+    const rows = readSheetObjects_(sheetName, schema).filter(function (r) { return matcher(r.data); });
+    // Practical 沒有題號欄位，用同一志願底下第幾筆（依寫入順序）定位
+    const target = scope === 'prc' ? rows[pIdx - 1] : rows[0];
+    if (!target) return fail_('找不到這個欄位對應的資料，內容可能已被修改過，請重新整理後再試。');
+
+    const oldValue = String(target.data[field] == null ? '' : target.data[field]);
+    const newValue = String(req.value == null ? '' : req.value);
+    if (oldValue === newValue) return { ok: true, message: '內容沒有變化。', unchanged: true };
+
+    const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+    const sh = ss.getSheetByName(sheetName);
+    const col = indexOfKey_(schema, field) + 1;
+    sh.getRange(target.row, col).setValue(newValue);
+
+    appendRows_(ss, CONFIG.SHEETS.EDITS, SCHEMA.EDITS, [buildRow_(SCHEMA.EDITS, {
+      timestamp: new Date(), submission_id: req.submissionId, field_path: path,
+      old_value: oldValue, new_value: newValue, edited_by: sess.label
+    })]);
+    SpreadsheetApp.flush();
+
+    writeLog_('INFO', req.submissionId, '教師編輯欄位：' + path, sess.label);
+    return { ok: true, message: '已儲存修改。' };
+
+  } catch (e) {
+    writeLog_('ERROR', req.submissionId, '編輯欄位失敗', String(e && e.stack ? e.stack : e));
+    return fail_('儲存時發生錯誤：' + (e && e.message ? e.message : e));
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+
+/** 查詢某一筆的修改紀錄，最新的在前面 */
+function adminEditHistory_(req) {
+  requireRole_(req.token, 'teacher');
+  const rows = readSheetObjects_(CONFIG.SHEETS.EDITS, SCHEMA.EDITS)
+    .filter(function (r) { return String(r.data.submission_id) === String(req.submissionId); })
+    .map(function (r) {
+      const d = r.data;
+      return {
+        at: d.timestamp instanceof Date ? d.timestamp.toISOString() : String(d.timestamp || ''),
+        path: String(d.field_path || ''), oldValue: String(d.old_value || ''),
+        newValue: String(d.new_value || ''), editor: String(d.edited_by || '')
+      };
+    })
+    .sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+  return { ok: true, edits: rows };
+}
+
+
+/**
  * 刪除整筆資料（五張分頁的列 + Drive 相片）。
  *
  * 這是不可逆操作，所以要求前端把該筆的 6 碼編號原樣送回來比對，

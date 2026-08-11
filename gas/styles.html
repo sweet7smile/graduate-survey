@@ -447,4 +447,25 @@ table.data td.num { text-align: center; color: var(--muted); }
 .btn-submit.danger:disabled {
   background: #b9c4d0; box-shadow: none; cursor: not-allowed;
 }
+
+/* 教師可編輯欄位（心得、建議、口試回答等自述文字） */
+.ef { margin-bottom: 12px; }
+.ef-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.ef-head > span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.ef-edit { padding: 3px 9px; font-size: 12px; }
+.ef-view {
+  font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  padding: 8px 10px; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px;
+  min-height: 1.6em;
+}
+.ef-empty { color: var(--muted); font-style: italic; }
+.ef-editing .ef-textarea {
+  width: 100%; font-family: inherit; font-size: 14px; line-height: 1.6;
+  padding: 8px 10px; border: 1px solid var(--brand-light); border-radius: 8px;
+  resize: vertical;
+}
+.ef-actions { display: flex; gap: 6px; margin-top: 6px; }
 </style>

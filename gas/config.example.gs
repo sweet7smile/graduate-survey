@@ -61,6 +61,7 @@ const CONFIG = {
     INTERVIEW: 'Interview',
     PRACTICAL: 'Practical',
     FILES: 'Files',
+    EDITS: 'Edits',
     CONFIG: 'Config',
     LOG: 'Log'
   }
@@ -245,7 +246,33 @@ const SCHEMA = {
     { key: 'submission_id',  label: '提交編號' },
     { key: 'message',        label: '訊息' },
     { key: 'detail',         label: '細節' }
+  ],
+
+  // 教師修飾學生自述文字的紀錄。保留原文，避免日後有爭議時查無依據。
+  EDITS: [
+    { key: 'timestamp',      label: '時間' },
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'field_path',     label: '欄位' },
+    { key: 'old_value',      label: '修改前' },
+    { key: 'new_value',      label: '修改後' },
+    { key: 'edited_by',      label: '編輯者' }
   ]
+};
+
+
+/**
+ * 教師後台開放編輯的欄位白名單。
+ *
+ * 刻意只收「學生自由填寫的自述文字」——心得、建議、口試回答這類，
+ * 這正是用詞太直接、可能出現不當內容的地方。
+ * 學校名稱、錄取結果、公開層級這類結構化或事實欄位不開放，
+ * 改了不是「修飾用詞」，是竄改紀錄。
+ */
+const EDITABLE_FIELDS = {
+  main: ['reflection', 'advice_1', 'advice_2', 'advice_3', 'do_earlier', 'regret',
+         'experiences', 'activities', 'portfolio_focus'],
+  itv: ['question', 'my_answer', 'better_answer', 'tip'],
+  prc: ['content', 'equipment', 'prep_advice']
 };
 
 
@@ -279,7 +306,8 @@ const LAYOUT = {
     prep_advice: 270,   file_urls: 230,
     file_id: 120,       file_name: 210,    file_url: 230,
     category: 100,      ref_idx: 75,       uploaded_at: 135,
-    timestamp: 135,     level: 70,         message: 330,   detail: 330
+    timestamp: 135,     level: 70,         message: 330,   detail: 330,
+    field_path: 140,    old_value: 320,    new_value: 320, edited_by: 100
   },
 
   // 凍結欄數：橫向捲動時保留辨識用的前幾欄
@@ -289,7 +317,8 @@ const LAYOUT = {
     INTERVIEW: 4,
     PRACTICAL: 4,
     FILES: 1,
-    LOG: 2
+    LOG: 2,
+    EDITS: 2
   }
 };
 
