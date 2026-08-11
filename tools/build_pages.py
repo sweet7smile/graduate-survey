@@ -4,11 +4,12 @@ build_pages.py — 由 GAS 原始碼產生 GitHub Pages 靜態版
 
 執行：  python tools/build_pages.py
 
-產物：
-  docs/index.html      單一自包含頁面（styles / script / config 全部內嵌）
-  docs/config.js       API 網址設定檔（已存在則不覆蓋，保留你填的網址）
-  docs/.nojekyll       關掉 Jekyll，避免 GitHub 亂處理檔案
-  config.example.gs    ID 與 Email 已抹除的設定檔範本，供公開 repo 使用
+產物（全部放在 repo 根目錄，對應 GitHub Pages 的預設設定 /(root)，
+不必去 Settings 改資料夾，避免選錯造成直接送出 GAS 樣板原始碼）：
+  index.html            單一自包含頁面（styles / script / config 全部內嵌）
+  config.js             API 網址設定檔（已存在則不覆蓋，保留你填的網址）
+  .nojekyll             關掉 Jekyll，避免 GitHub 亂處理檔案
+  gas/config.example.gs ID 與 Email 已抹除的設定檔範本，供公開 repo 使用
 
 設計重點：選項清單只有 config.gs 一份來源。這支腳本直接把 config.gs
 的原始碼（抹掉機密後）內嵌進靜態頁再呼叫 getClientConfig()，
@@ -19,7 +20,8 @@ import re
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DOCS = ROOT / "docs"
+GAS = ROOT / "gas"      # GAS 原始碼
+SITE = ROOT             # GitHub Pages 服務的目錄（根目錄＝預設設定）
 
 # ── 需要從公開版本抹掉的機密設定 ──────────────────────────
 SECRETS = [
@@ -41,15 +43,15 @@ def scrub(config_src: str) -> str:
 
 
 def main() -> None:
-    index_src = (ROOT / "index.html").read_text(encoding="utf-8")
-    styles_src = (ROOT / "styles.html").read_text(encoding="utf-8")
-    script_src = (ROOT / "script.html").read_text(encoding="utf-8")
-    config_src = (ROOT / "config.gs").read_text(encoding="utf-8")
+    index_src = (GAS / "index.html").read_text(encoding="utf-8")
+    styles_src = (GAS / "styles.html").read_text(encoding="utf-8")
+    script_src = (GAS / "script.html").read_text(encoding="utf-8")
+    config_src = (GAS / "config.gs").read_text(encoding="utf-8")
 
     clean_config = scrub(config_src)
 
     # 1) 產生公開用的設定檔範本
-    (ROOT / "config.example.gs").write_text(
+    (GAS / "config.example.gs").write_text(
         "/* 這是公開範本：複製成 config.gs 後填入自己的 ID 與 Email。\n"
         "   config.gs 已列入 .gitignore，不會被推上 GitHub。            */\n\n"
         + clean_config,
@@ -79,11 +81,10 @@ def main() -> None:
         raise SystemExit("還有沒展開的 GAS 樣板語法，請檢查 index.html。")
 
     # 3) 寫出
-    DOCS.mkdir(exist_ok=True)
-    (DOCS / "index.html").write_text(page, encoding="utf-8")
-    (DOCS / ".nojekyll").write_text("", encoding="utf-8")
+    (SITE / "index.html").write_text(page, encoding="utf-8")
+    (SITE / ".nojekyll").write_text("", encoding="utf-8")
 
-    cfg_js = DOCS / "config.js"
+    cfg_js = SITE / "config.js"
     if not cfg_js.exists():
         cfg_js.write_text(
             "/* ═══════════════════════════════════════════════════════\n"
@@ -99,9 +100,9 @@ def main() -> None:
             encoding="utf-8",
         )
 
-    print(f"docs/index.html  {len(page):,} chars")
-    print(f"config.example.gs 已更新（ID 與 Email 已抹除）")
-    print(f"docs/config.js   {'保留原有設定' if cfg_js.exists() else '新建'}")
+    print(f"index.html            {len(page):,} chars")
+    print(f"gas/config.example.gs ID 與 Email 已抹除")
+    print(f"config.js             {'保留原有設定' if cfg_js.exists() else '新建'}")
 
 
 if __name__ == "__main__":

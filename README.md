@@ -17,17 +17,24 @@ Google Apps Script + Google Sheet + Google Drive。
 
 | 檔案 | GAS 編輯器檔名 | 說明 |
 |---|---|---|
-| `config.gs` | `config` | **含真實 ID，已列入 .gitignore，不會上傳** |
-| `config.example.gs` | — | 公開範本（ID 與 Email 已抹除），自動產生 |
-| `Code.gs` | `Code` | 後端：`doGet` 表單頁、`doPost` API、寫入、上傳、寄信 |
-| `index.html` | `index` | 表單頁 |
-| `styles.html` | `styles` | CSS |
-| `script.html` | `script` | 前端邏輯 |
-| `docs/` | — | GitHub Pages 靜態版（自動產生，勿手改） |
-| `tools/build_pages.py` | — | 由上述原始碼產生 `docs/` |
+| `gas/config.gs` | `config` | **含真實 ID，已列入 .gitignore，不會上傳** |
+| `gas/config.example.gs` | — | 公開範本（ID 與 Email 已抹除），自動產生 |
+| `gas/Code.gs` | `Code` | 後端：`doGet` 表單頁、`doPost` API、寫入、上傳、寄信 |
+| `gas/index.html` | `index` | 表單頁樣板 |
+| `gas/styles.html` | `styles` | CSS |
+| `gas/script.html` | `script` | 前端邏輯 |
+| `index.html` | — | **自動產生**的靜態版，GitHub Pages 服務的就是它，勿手改 |
+| `config.js` | — | Pages 用的 API 網址設定 |
+| `tools/build_pages.py` | — | 由 `gas/` 產生根目錄的靜態版 |
 | `SPEC.md` | — | 規格書 |
 
-> 從 GitHub clone 下來的人：先把 `config.example.gs` 複製成 `config.gs`，填入自己的 Sheet ID、Drive 資料夾 ID 與通知信箱。
+> GAS 原始碼放在 `gas/`，建置後的靜態網頁放在根目錄。
+> 這樣 GitHub Pages 用**預設的 `/(root)`** 設定就會服務正確的檔案 ——
+> 若把兩者放反或改用 `/docs` 卻忘了在 Settings 改資料夾，
+> Pages 會直接把 GAS 樣板原始碼當網頁送出，畫面會變成沒有 CSS 也沒有 JS 的裸 HTML。
+
+> 從 GitHub clone 下來的人：先把 `gas/config.example.gs` 複製成 `gas/config.gs`，
+> 填入自己的 Sheet ID、Drive 資料夾 ID 與通知信箱。
 
 ---
 
@@ -73,9 +80,9 @@ Google Apps Script + Google Sheet + Google Drive。
 python tools/build_pages.py
 ```
 
-會產生 `docs/index.html`（styles / script / config 全部內嵌成單一檔案），
-並自動把 `config.gs` 裡的 Sheet ID、Drive 資料夾 ID、通知信箱抹成佔位字串後
-寫入 `config.example.gs`。**改過任何原始碼都要重跑一次。**
+會在**根目錄**產生 `index.html`（styles / script / config 全部內嵌成單一檔案），
+並自動把 `gas/config.gs` 裡的 Sheet ID、Drive 資料夾 ID、通知信箱抹成佔位字串後
+寫入 `gas/config.example.gs`。**改過任何原始碼都要重跑一次。**
 
 ### 2. 推上 GitHub
 
@@ -88,13 +95,13 @@ git push -u origin main
 ### 3. 開啟 Pages
 
 repo → Settings → Pages →
-Source 選 **Deploy from a branch** → Branch 選 **main** / 資料夾選 **/docs** → Save。
+Source 選 **Deploy from a branch** → Branch 選 **main**、資料夾維持預設的 **`/(root)`** → Save。
 
 約一分鐘後開 `https://<帳號>.github.io/<repo名稱>/`。
 
 ### 4.（選用）讓 Pages 變成正式站
 
-編輯 `docs/config.js`，把 A-3 拿到的 `/exec` 網址填進去：
+編輯根目錄的 `config.js`，把 A-3 拿到的 `/exec` 網址填進去：
 
 ```javascript
 window.GRAD_API_URL = 'https://script.google.com/macros/s/AKfy...../exec';

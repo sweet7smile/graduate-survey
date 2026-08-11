@@ -3,7 +3,289 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
-  <?!= include('styles'); ?>
+  <style>
+:root {
+  --brand: #1a3a5c;
+  --brand-light: #2c5f8a;
+  --accent: #f0a202;
+  --bg: #f2f5f8;
+  --card: #ffffff;
+  --text: #1c2733;
+  --muted: #6b7a8c;
+  --line: #dde4ec;
+  --danger: #c0392b;
+  --ok: #1e8449;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── 頁首 ─────────────────────────────── */
+header.top {
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+  color: #fff;
+  padding: 22px 18px 18px;
+}
+header.top h1 { margin: 0 0 6px; font-size: 21px; letter-spacing: .5px; }
+header.top p  { margin: 0; font-size: 14px; opacity: .9; }
+
+.progress-wrap {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 18px;
+}
+.progress-bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--brand-light), var(--accent));
+  transition: width .3s ease;
+}
+.progress-text { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── 版面 ─────────────────────────────── */
+main { max-width: 860px; margin: 0 auto; padding: 16px 14px 120px; }
+
+section.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+section.card > h2 {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 17px;
+  background: #f7f9fb;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 9px;
+}
+section.card > h2 .num {
+  background: var(--brand); color: #fff;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; flex: 0 0 auto;
+}
+.card-body { padding: 16px; }
+
+.hint {
+  font-size: 13px; color: var(--muted);
+  background: #f7f9fb; border-left: 3px solid var(--brand-light);
+  padding: 9px 12px; border-radius: 0 8px 8px 0; margin: 0 0 14px;
+}
+.hint.warn { border-left-color: var(--accent); background: #fff8e8; color: #7a5600; }
+
+/* ── 欄位 ─────────────────────────────── */
+.field { margin-bottom: 14px; }
+.field > label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+.field .sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.req::after { content: " *"; color: var(--danger); }
+
+input[type=text], input[type=email], input[type=tel], input[type=number],
+select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 16px;           /* 16px 以下 iOS 會自動放大畫面 */
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brand-light);
+  box-shadow: 0 0 0 3px rgba(44,95,138,.15);
+}
+textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
+input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); background: #fff5f4; }
+
+.readonly-box {
+  padding: 10px 12px; background: #eef2f6; border-radius: 9px;
+  color: var(--muted); font-size: 15px;
+}
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 620px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .grid3.keep { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── 勾選 / 單選 ──────────────────────── */
+.chk-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chk-group label {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 99px;
+  background: #fff; font-size: 14px; cursor: pointer; user-select: none;
+}
+.chk-group label:has(input:checked) {
+  border-color: var(--brand-light); background: #e8f0f7; font-weight: 600;
+}
+.chk-group input { width: 16px; height: 16px; accent-color: var(--brand); margin: 0; }
+
+.radio-col label {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px;
+  margin-bottom: 7px; background: #fff; cursor: pointer; font-size: 15px;
+}
+.radio-col label:has(input:checked) { border-color: var(--brand-light); background: #e8f0f7; }
+.radio-col input { accent-color: var(--brand); margin-top: 3px; }
+
+/* ── 摺疊區 ───────────────────────────── */
+details.fold {
+  border: 1px solid var(--line); border-radius: 9px;
+  margin-bottom: 14px; background: #fbfcfd;
+}
+details.fold > summary {
+  padding: 11px 14px; cursor: pointer; font-weight: 600; font-size: 14px;
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+}
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "▾"; color: var(--muted); }
+details.fold[open] > summary::after { content: "▴"; }
+details.fold > div { padding: 0 14px 14px; }
+
+/* ── 動態卡片 ─────────────────────────── */
+.dyn-card {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  margin-bottom: 14px; background: #fbfcfd; overflow: hidden;
+}
+.dyn-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 13px; background: #eef3f8; border-bottom: 1px solid var(--line);
+}
+.dyn-title { font-weight: 700; font-size: 15px; color: var(--brand); }
+.dyn-body { padding: 13px; }
+
+.sub-card {
+  border: 1px dashed #c3cfdc; border-radius: 10px;
+  padding: 12px; margin-bottom: 10px; background: #fff;
+}
+.sub-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 9px; font-weight: 600; font-size: 14px; color: var(--brand-light);
+}
+
+.sub-section-title {
+  font-size: 14px; font-weight: 700; color: var(--brand);
+  margin: 16px 0 8px; padding-top: 12px; border-top: 2px solid var(--line);
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ── 按鈕 ─────────────────────────────── */
+button { font-family: inherit; cursor: pointer; }
+
+.btn-add {
+  width: 100%; padding: 11px; font-size: 15px; font-weight: 600;
+  border: 1.5px dashed var(--brand-light); border-radius: 10px;
+  background: #fff; color: var(--brand-light);
+}
+.btn-add:hover { background: #eef3f8; }
+.btn-add:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-add.small { padding: 8px; font-size: 14px; }
+
+.btn-del {
+  border: none; background: transparent; color: var(--danger);
+  font-size: 13px; padding: 4px 8px; border-radius: 6px;
+}
+.btn-del:hover { background: #fdecea; }
+
+.btn-submit {
+  width: 100%; padding: 16px; font-size: 18px; font-weight: 700;
+  border: none; border-radius: 12px; color: #fff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+  box-shadow: 0 4px 14px rgba(26,58,92,.28);
+}
+.btn-submit:disabled {
+  background: #b9c4d0; box-shadow: none; cursor: not-allowed;
+}
+
+.btn-ghost {
+  padding: 10px 14px; font-size: 14px; border-radius: 9px;
+  border: 1px solid var(--line); background: #fff; color: var(--muted);
+}
+
+/* ── 相片 ─────────────────────────────── */
+.file-drop {
+  border: 1.5px dashed #c3cfdc; border-radius: 10px;
+  padding: 14px; text-align: center; background: #fafbfc;
+  font-size: 14px; color: var(--muted);
+}
+.file-drop input[type=file] { display: none; }
+.file-drop .pick {
+  display: inline-block; margin-top: 6px; padding: 8px 16px;
+  background: var(--brand-light); color: #fff; border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+}
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.thumb { position: relative; width: 84px; }
+.thumb img { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.thumb .x {
+  position: absolute; top: -6px; right: -6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--danger); color: #fff; border: none;
+  font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.thumb .sz { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+
+/* ── 送出區 ───────────────────────────── */
+.submit-area { padding: 4px 2px 0; }
+.draft-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--muted);
+}
+
+/* ── 遮罩 / 結果頁 ────────────────────── */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(20,30,42,.78);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.show { display: flex; }
+.overlay-box {
+  background: #fff; border-radius: 14px; padding: 26px 22px;
+  max-width: 420px; width: 100%; text-align: center;
+}
+.spinner {
+  width: 42px; height: 42px; margin: 0 auto 14px;
+  border: 4px solid var(--line); border-top-color: var(--brand-light);
+  border-radius: 50%; animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-icon { font-size: 46px; line-height: 1; margin-bottom: 10px; }
+.result-code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 26px; font-weight: 700; letter-spacing: 3px; color: var(--brand);
+  background: #eef3f8; padding: 10px; border-radius: 9px; margin: 12px 0;
+}
+
+.msg-box {
+  padding: 12px 14px; border-radius: 9px; margin-bottom: 14px;
+  font-size: 14px; display: none; white-space: pre-wrap;
+}
+.msg-box.err { display: block; background: #fdecea; color: var(--danger); border: 1px solid #f5c6c2; }
+.msg-box.ok  { display: block; background: #eafaf1; color: var(--ok); border: 1px solid #b7e4c9; }
+
+footer.bottom {
+  text-align: center; font-size: 12px; color: var(--muted);
+  padding: 20px 14px 30px;
+}
+</style>
+
 </head>
 <body>
 
@@ -408,10 +690,961 @@
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
-  const CFG = <?!= JSON.stringify(getClientConfig()) ?>;
+/* ── 以下由 config.gs 自動內嵌（ID 與 Email 已移除），請勿手動修改，改 config.gs 後重跑 tools/build_pages.py ── */
+/**
+ * 霧峰農工電子科 畢業生升學資料蒐集系統
+ * config.gs — 常數、選項清單、資料表結構
+ *
+ * 改設定只需要動這個檔案。
+ */
+
+const CONFIG = {
+  // ── 儲存位置 ────────────────────────────────────────────
+  SHEET_ID: 'YOUR_SHEET_ID',
+  DRIVE_FOLDER_ID: 'YOUR_DRIVE_FOLDER_ID',
+
+  // ── 學校固定資訊 ────────────────────────────────────────
+  SCHOOL: '國立霧峰高級農工職業學校',
+  DEPT: '電子科',
+
+  // ── 通知信 ──────────────────────────────────────────────
+  NOTIFY_EMAIL: 'your-address@example.com',  // 承辦教師，收提交通知
+  SEND_CONFIRM_MAIL: true,                      // 是否寄確認信給學生
+  CONTACT_NAME: '霧峰農工電子科',
+
+  // ── 上傳限制 ────────────────────────────────────────────
+  MAX_FILES_PER_PRACTICAL: 5,
+  MAX_FILES_TOTAL: 15,
+  MAX_TOTAL_BYTES: 4 * 1024 * 1024,   // 單次提交所有圖片合計上限（base64 前）
+  IMAGE_MAX_EDGE: 1600,               // 前端壓縮：長邊像素上限
+  IMAGE_QUALITY: 0.8,                 // 前端壓縮：JPEG 品質
+
+  // ── 表單限制 ────────────────────────────────────────────
+  MAX_ADMISSIONS: 6,                  // 推甄校系筆數上限
+
+  // ── 行為 ────────────────────────────────────────────────
+  BLOCK_DUPLICATE: true,              // 同 Email + 同學年度 是否阻擋重複提交
+  LOCK_TIMEOUT_MS: 30000,
+
+  // ── Sheet 分頁名稱 ──────────────────────────────────────
+  SHEETS: {
+    MAIN: 'Main',
+    ADMISSIONS: 'Admissions',
+    INTERVIEW: 'Interview',
+    PRACTICAL: 'Practical',
+    FILES: 'Files',
+    CONFIG: 'Config',
+    LOG: 'Log'
+  }
+};
+
+
+/** 下拉／複選選項清單 */
+const OPTIONS = {
+  MAIN_PATHS: [
+    '四技二專甄選入學', '科技校院繁星計畫', '技優甄審', '技優保送',
+    '特殊選才', '四技二專登記分發', '大學申請入學（學測）',
+    '就業', '服役', '其他'
+  ],
+
+  CHANNELS: [
+    '四技二專甄選入學', '科技校院繁星計畫', '技優甄審', '技優保送',
+    '特殊選才', '四技二專登記分發', '大學申請入學（學測）', '其他'
+  ],
+
+  EXAM_GROUPS: [
+    '電機與電子群電子類', '電機與電子群電機類', '機械群',
+    '設計群', '商業與管理群', '其他', '未報考統測'
+  ],
+
+  CERTIFICATES: [
+    '丙級電腦硬體裝修', '丙級工業電子', '乙級工業電子',
+    '丙級數位電子', '乙級數位電子', '丙級儀表電子',
+    '丙級室內配線', '乙級機電整合', '雲端物聯網應用',
+    'TQC 系列', 'ITE 資訊專業人員', '其他'
+  ],
+
+  STAGE1_RESULTS: ['通過', '未通過', '不適用（無一階篩選）'],
+
+  STAGE2_ITEMS: [
+    '書面審查', '個人面試', '團體面試', '筆試',
+    '術科實作', '實作測驗', '作品集'
+  ],
+
+  FINAL_RESULTS: ['正取', '備取', '未錄取', '未參加二階'],
+
+  INTERVIEW_FORMATS: ['個人面試', '團體面試', '線上面試', '未面試'],
+
+  QUESTION_CATEGORIES: [
+    '自我介紹', '專業知識', '專題內容', '備審內容', '生涯規劃',
+    '時事', '英文', '情境題', '臨場反應', '其他'
+  ],
+
+  PRACTICAL_SUBJECTS: [
+    '電子電路實作', '程式設計', '數學筆試', '專業科目筆試',
+    '專題口說', '電腦繪圖', '英文測驗', '其他'
+  ],
+
+  PORTFOLIO_ASKED: ['有，被問很多', '有，稍微問到', '沒有', '不記得'],
+
+  PUBLISH_LEVELS: [
+    '完全公開（顯示姓名）',
+    '匿名公開（僅顯示「電子科 OO 級 X 同學」）',
+    '僅供校內教師參考，不公開'
+  ],
+
+  FILE_CATEGORIES: ['術科題目', '作品照', '備審目錄', '其他']
+};
+
+
+/**
+ * 資料表結構。key = 程式用欄位名，label = Sheet 表頭中文。
+ * 寫入時依此順序組列，改順序只要動這裡。
+ */
+const SCHEMA = {
+  MAIN: [
+    { key: 'submission_id',    label: '提交編號' },
+    { key: 'submitted_at',     label: '提交時間' },
+    { key: 'grad_year',        label: '畢業學年度' },
+    { key: 'school',           label: '畢業學校' },
+    { key: 'dept',             label: '科別' },
+    { key: 'class_name',       label: '班級' },
+    { key: 'seat_no',          label: '座號' },
+    { key: 'name',             label: '姓名' },
+    { key: 'email',            label: '聯絡Email' },
+    { key: 'phone',            label: '手機' },
+    { key: 'social_id',        label: 'IG/Line' },
+    { key: 'current_place',    label: '目前就讀學校或服務單位' },
+    { key: 'main_path',        label: '主要出路' },
+    { key: 'exam_group',       label: '報考群類' },
+    { key: 'tve_ch',           label: '統測-國文' },
+    { key: 'tve_en',           label: '統測-英文' },
+    { key: 'tve_math',         label: '統測-數學' },
+    { key: 'tve_prof1',        label: '統測-專業一' },
+    { key: 'tve_prof2',        label: '統測-專業二' },
+    { key: 'tve_total',        label: '統測-總分' },
+    { key: 'rank_pct',         label: '在校成績班排百分比' },
+    { key: 'certificates',     label: '持有證照' },
+    { key: 'experiences',      label: '競賽/專題經歷' },
+    { key: 'activities',       label: '幹部/社團/志工' },
+    { key: 'portfolio_pages',  label: '備審頁數' },
+    { key: 'portfolio_tool',   label: '備審製作工具' },
+    { key: 'portfolio_hours',  label: '備審花費時數' },
+    { key: 'portfolio_focus',  label: '備審重點' },
+    { key: 'portfolio_asked',  label: '面試是否問到備審' },
+    { key: 'reflection',       label: '整體心得' },
+    { key: 'advice_1',         label: '建議1' },
+    { key: 'advice_2',         label: '建議2' },
+    { key: 'advice_3',         label: '建議3' },
+    { key: 'do_earlier',       label: '高一高二該先做什麼' },
+    { key: 'regret',           label: '最後悔沒做的事' },
+    { key: 'willing_share',    label: '願意回校分享' },
+    { key: 'willing_qa',       label: '接受學弟妹提問' },
+    { key: 'consent_pdpa',     label: '個資同意' },
+    { key: 'publish_level',    label: '公開層級' },
+    { key: 'consent_photo',    label: '相片授權' },
+    { key: 'review_status',    label: '審核狀態' }
+  ],
+
+  ADMISSIONS: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'idx',            label: '志願序' },
+    { key: 'univ',           label: '學校名稱' },
+    { key: 'major',          label: '科系名稱' },
+    { key: 'channel',        label: '招生管道' },
+    { key: 'stage1_result',  label: '一階篩選' },
+    { key: 'stage2_items',   label: '二階項目' },
+    { key: 'stage2_score',   label: '二階成績' },
+    { key: 'final_result',   label: '最終結果' },
+    { key: 'result_rank',    label: '名次' },
+    { key: 'is_enrolled',    label: '最終就讀' }
+  ],
+
+  INTERVIEW: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'admission_idx',  label: '志願序' },
+    { key: 'univ',           label: '學校名稱' },
+    { key: 'major',          label: '科系名稱' },
+    { key: 'format',         label: '面試形式' },
+    { key: 'prof_count',     label: '教授人數' },
+    { key: 'duration_min',   label: '時間長度(分)' },
+    { key: 'flow',           label: '面試流程' },
+    { key: 'q_no',           label: '題號' },
+    { key: 'question',       label: '題目' },
+    { key: 'categories',     label: '題目分類' },
+    { key: 'my_answer',      label: '我當時的回答' },
+    { key: 'better_answer',  label: '回頭看該怎麼答' },
+    { key: 'difficulty',     label: '難度(1-5)' },
+    { key: 'tip',            label: '給學弟妹的提醒' }
+  ],
+
+  PRACTICAL: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'admission_idx',  label: '志願序' },
+    { key: 'univ',           label: '學校名稱' },
+    { key: 'major',          label: '科系名稱' },
+    { key: 'subject',        label: '術科科目' },
+    { key: 'duration_min',   label: '考試時間(分)' },
+    { key: 'equipment',      label: '提供的設備工具' },
+    { key: 'content',        label: '題目內容' },
+    { key: 'prep_advice',    label: '準備方式建議' },
+    { key: 'file_urls',      label: '相關相片連結' }
+  ],
+
+  FILES: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'file_id',        label: '檔案ID' },
+    { key: 'file_name',      label: '檔名' },
+    { key: 'file_url',       label: '檢視連結' },
+    { key: 'category',       label: '用途' },
+    { key: 'ref_idx',        label: '對應志願序' },
+    { key: 'uploaded_at',    label: '上傳時間' }
+  ],
+
+  LOG: [
+    { key: 'timestamp',      label: '時間' },
+    { key: 'level',          label: '層級' },
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'message',        label: '訊息' },
+    { key: 'detail',         label: '細節' }
+  ]
+};
+
+
+/**
+ * 產生可選的畢業學年度清單（民國制）。
+ * 8 月起算新學年度：2026-08 → 115 學年度。
+ */
+function getGradYears_() {
+  const now = new Date();
+  let roc = now.getFullYear() - 1911;
+  if (now.getMonth() + 1 < 8) roc -= 1;   // 1~7 月仍屬前一學年度
+  const years = [];
+  for (let y = roc; y >= roc - 6; y--) years.push(String(y));
+  return years;
+}
+
+
+/** 傳給前端的設定（不含任何機密資訊） */
+function getClientConfig() {
+  return {
+    school: CONFIG.SCHOOL,
+    dept: CONFIG.DEPT,
+    gradYears: getGradYears_(),
+    maxAdmissions: CONFIG.MAX_ADMISSIONS,
+    maxFilesPerPractical: CONFIG.MAX_FILES_PER_PRACTICAL,
+    maxFilesTotal: CONFIG.MAX_FILES_TOTAL,
+    maxTotalBytes: CONFIG.MAX_TOTAL_BYTES,
+    imageMaxEdge: CONFIG.IMAGE_MAX_EDGE,
+    imageQuality: CONFIG.IMAGE_QUALITY,
+    options: OPTIONS
+  };
+}
+
 </script>
-<?!= include('script'); ?>
+<script>
+  const CFG = getClientConfig();
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   霧峰農工電子科 畢業生升學資料蒐集 — 前端邏輯
+   CFG 由 index.html 於載入時注入
+   ═══════════════════════════════════════════════════════════ */
+
+const DRAFT_KEY = 'wufai_ee_grad_draft_v1';
+const DIFFICULTY = ['1（很簡單）', '2', '3（普通）', '4', '5（很難）'];
+let radioSeq = 0;
+let draftTimer = null;
+
+/**
+ * 執行模式自動判斷 —— 同一份程式碼三種情境共用：
+ *   gas  : 由 Apps Script 的 HtmlService 託管，直接呼叫 google.script.run
+ *   api  : 靜態託管（GitHub Pages）且已在 config.js 填入 GAS 的 /exec 網址，走 doPost
+ *   demo : 靜態託管但沒填網址，示範模式，不會寫入任何資料
+ */
+function runMode() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) return 'gas';
+  if (window.GRAD_API_URL && String(window.GRAD_API_URL).trim()) return 'api';
+  return 'demo';
+}
+
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+
+/* ── 啟動 ─────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function () {
+  $('#schoolBox').textContent = CFG.school + '　' + CFG.dept;
+  $('#hdr-sub').textContent = CFG.school + '　' + CFG.dept;
+
+  fillOptions(document);
+  bindGlobalEvents();
+  showModeBanner();
+  restoreDraft();
+  updateProgress();
+
+  // 至少先給一張校系卡片，降低不知道要按什麼的門檻
+  if (!$$('.adm-card').length) addAdmission();
+});
+
+
+/* ── 選項填充 ─────────────────────────────────────────── */
+/** 回傳 { values:[實際存入的值], labels:[畫面顯示文字] } */
+function optionListOf(key) {
+  if (key === '__GRAD_YEARS') {
+    return { values: CFG.gradYears.slice(), labels: CFG.gradYears.map(y => y + ' 學年度') };
+  }
+  if (key === '__DIFFICULTY') {
+    return { values: ['1', '2', '3', '4', '5'], labels: DIFFICULTY };
+  }
+  const arr = CFG.options[key] || [];
+  return { values: arr, labels: arr };
+}
+
+function fillOptions(root) {
+  $$('[data-fill]', root).forEach(function (el) {
+    if (el.dataset.filled === '1') return;
+    el.dataset.filled = '1';
+
+    const type = el.dataset.type;
+    const opt = optionListOf(el.dataset.fill);
+    const values = opt.values;
+    const list = opt.labels;
+
+    if (type === 'select') {
+      const ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = el.dataset.placeholder || '請選擇';
+      el.appendChild(ph);
+      list.forEach(function (label, i) {
+        const o = document.createElement('option');
+        o.value = values[i];
+        o.textContent = label;
+        el.appendChild(o);
+      });
+    } else if (type === 'radio' || type === 'checkbox') {
+      const name = 'g' + (++radioSeq);
+      list.forEach(function (label, i) {
+        const lb = document.createElement('label');
+        const ip = document.createElement('input');
+        ip.type = type;
+        if (type === 'radio') ip.name = name;
+        ip.value = values[i];
+        lb.appendChild(ip);
+        lb.appendChild(document.createTextNode(' ' + label));
+        el.appendChild(lb);
+      });
+    }
+  });
+}
+
+
+/** 示範模式時在頁面最上方掛一條警告，避免有人以為自己真的填完了 */
+function showModeBanner() {
+  if (runMode() !== 'demo') return;
+  const div = document.createElement('div');
+  div.className = 'hint warn';
+  div.style.marginBottom = '16px';
+  div.innerHTML = '<strong>⚠️ 這是介面示範版</strong><br>' +
+    '你可以完整操作、上傳相片、體驗整個流程，但按下送出<strong>不會寫入任何資料</strong>，' +
+    '也不會寄出任何信件。正式版請使用學校提供的填寫連結。';
+  const main = document.querySelector('main');
+  main.insertBefore(div, main.firstChild);
+}
+
+
+/* ── 事件 ─────────────────────────────────────────────── */
+function bindGlobalEvents() {
+  $('#btnAddAdm').addEventListener('click', function () { addAdmission(); });
+  $('#btnSubmit').addEventListener('click', onSubmit);
+  $('#btnClearDraft').addEventListener('click', clearDraft);
+
+  $('#chkPdpa').addEventListener('change', updateSubmitState);
+
+  document.addEventListener('input', onAnyChange);
+  document.addEventListener('change', onAnyChange);
+
+  // 動態卡片內的按鈕（事件委派）
+  $('#admList').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    const card = btn.closest('.adm-card');
+
+    if (act === 'del-adm') {
+      if (confirm('確定要刪除這個校系？裡面的口試題目與術科資料也會一起刪除。')) {
+        card.remove();
+        renumberAdmissions();
+        markDirty();
+      }
+    } else if (act === 'add-q') {
+      addQuestion(card);
+    } else if (act === 'add-p') {
+      addPractical(card);
+    } else if (act === 'del-q') {
+      btn.closest('.q-item').remove();
+      renumberSub(card, '.q-item', '.q-no');
+      markDirty();
+    } else if (act === 'del-p') {
+      btn.closest('.p-item').remove();
+      renumberSub(card, '.p-item', '.p-no');
+      markDirty();
+    }
+  });
+
+  $('#admList').addEventListener('change', function (e) {
+    if (e.target.classList.contains('file-input')) handleFilePick(e.target);
+  });
+
+  window.addEventListener('beforeunload', function (e) {
+    if (document.body.dataset.submitted === '1') return;
+    if (!hasAnyInput()) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+}
+
+function onAnyChange() {
+  if (document.body.dataset.submitted === '1') return;
+  updateProgress();
+  updateSubmitState();
+  markDirty();
+}
+
+
+/* ── 動態卡片 ─────────────────────────────────────────── */
+function addAdmission(data) {
+  const list = $('#admList');
+  if ($$('.adm-card', list).length >= CFG.maxAdmissions) {
+    alert('最多只能填 ' + CFG.maxAdmissions + ' 個校系。');
+    return null;
+  }
+  const node = $('#tpl-admission').content.cloneNode(true);
+  const card = node.querySelector('.adm-card');
+  list.appendChild(node);
+  fillOptions(card);
+  renumberAdmissions();
+  updateAddBtn();
+
+  if (data) {
+    setFields(card.querySelector('.adm-fields'), 'a', data);
+    (data.interviews || []).forEach(q => addQuestion(card, q));
+    (data.practicals || []).forEach(p => addPractical(card, p));
+  }
+  return card;
+}
+
+function addQuestion(card, data) {
+  const node = $('#tpl-question').content.cloneNode(true);
+  const item = node.querySelector('.q-item');
+  card.querySelector('.q-list').appendChild(node);
+  fillOptions(item);
+  renumberSub(card, '.q-item', '.q-no');
+  if (data) setFields(item, 'q', data);
+  markDirty();
+  return item;
+}
+
+function addPractical(card, data) {
+  const node = $('#tpl-practical').content.cloneNode(true);
+  const item = node.querySelector('.p-item');
+  card.querySelector('.p-list').appendChild(node);
+  fillOptions(item);
+  item.querySelector('.max-files').textContent = CFG.maxFilesPerPractical;
+  item._files = [];
+  renumberSub(card, '.p-item', '.p-no');
+  if (data) setFields(item, 'p', data);
+  markDirty();
+  return item;
+}
+
+function renumberAdmissions() {
+  $$('.adm-card').forEach(function (c, i) {
+    c.querySelector('.adm-no').textContent = String(i + 1);
+  });
+  updateAddBtn();
+}
+
+function renumberSub(card, itemSel, noSel) {
+  $$(itemSel, card).forEach(function (el, i) {
+    const n = el.querySelector(noSel);
+    if (n) n.textContent = String(i + 1);
+  });
+}
+
+function updateAddBtn() {
+  const n = $$('.adm-card').length;
+  const btn = $('#btnAddAdm');
+  btn.disabled = n >= CFG.maxAdmissions;
+  btn.textContent = btn.disabled
+    ? '已達 ' + CFG.maxAdmissions + ' 個校系上限'
+    : '＋ 新增校系（目前 ' + n + ' 個）';
+}
+
+
+/* ── 相片 ─────────────────────────────────────────────── */
+function handleFilePick(input) {
+  const item = input.closest('.p-item');
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+
+  const room = CFG.maxFilesPerPractical - item._files.length;
+  if (room <= 0) {
+    alert('這個術科項目最多 ' + CFG.maxFilesPerPractical + ' 張相片。');
+    return;
+  }
+  const picked = files.slice(0, room);
+  if (files.length > room) alert('只會加入前 ' + room + ' 張（每項上限 ' + CFG.maxFilesPerPractical + ' 張）。');
+
+  showOverlay('壓縮相片中…', '共 ' + picked.length + ' 張，請稍候');
+
+  Promise.all(picked.map(compressImage))
+    .then(function (results) {
+      const totalNow = totalFileCount();
+      if (totalNow + results.length > CFG.maxFilesTotal) {
+        throw new Error('整份表單最多 ' + CFG.maxFilesTotal + ' 張相片。');
+      }
+      const bytesNow = totalFileBytes() + results.reduce((s, r) => s + r.size, 0);
+      if (bytesNow > CFG.maxTotalBytes) {
+        throw new Error('相片總容量會超過 ' + Math.round(CFG.maxTotalBytes / 1048576) +
+                        ' MB 上限，請減少張數或改拍解析度低一點的照片。');
+      }
+      results.forEach(r => item._files.push(r));
+      renderThumbs(item);
+      hideOverlay();
+    })
+    .catch(function (err) {
+      hideOverlay();
+      alert(err.message || String(err));
+    });
+}
+
+function compressImage(file) {
+  return new Promise(function (resolve, reject) {
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name)) {
+      reject(new Error('「' + file.name + '」不是圖片檔。'));
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const max = CFG.imageMaxEdge;
+      if (Math.max(w, h) > max) {
+        const r = max / Math.max(w, h);
+        w = Math.round(w * r); h = Math.round(h * r);
+      }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = cv.toDataURL('image/jpeg', CFG.imageQuality);
+      const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+      resolve({
+        name: file.name,
+        mimeType: 'image/jpeg',
+        data: base64,
+        size: Math.floor(base64.length * 3 / 4),
+        preview: dataUrl
+      });
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      reject(new Error('無法讀取「' + file.name + '」。若是 iPhone 拍的 HEIC 檔，' +
+                       '請到「設定 → 相機 → 格式」改為「最相容」後重拍，或先另存成 JPG。'));
+    };
+    img.src = url;
+  });
+}
+
+function renderThumbs(item) {
+  const box = item.querySelector('.thumbs');
+  box.innerHTML = '';
+  item._files.forEach(function (f, i) {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    const im = document.createElement('img');
+    im.src = f.preview;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'x';
+    x.textContent = '×';
+    x.onclick = function () {
+      item._files.splice(i, 1);
+      renderThumbs(item);
+      markDirty();
+    };
+    const sz = document.createElement('div');
+    sz.className = 'sz';
+    sz.textContent = Math.round(f.size / 1024) + ' KB';
+    d.appendChild(im); d.appendChild(x); d.appendChild(sz);
+    box.appendChild(d);
+  });
+  markDirty();
+}
+
+function totalFileCount() {
+  return $$('.p-item').reduce((s, el) => s + ((el._files || []).length), 0);
+}
+function totalFileBytes() {
+  return $$('.p-item').reduce((s, el) =>
+    s + (el._files || []).reduce((a, f) => a + f.size, 0), 0);
+}
+
+
+/* ── 讀寫欄位 ─────────────────────────────────────────── */
+function readFields(scope, attr) {
+  const out = {};
+  $$('[data-' + attr + ']', scope).forEach(function (el) {
+    const key = el.dataset[attr];
+    if (el.classList.contains('chk-group') || el.classList.contains('radio-col')) {
+      if (el.dataset.type === 'radio') {
+        const c = el.querySelector('input:checked');
+        out[key] = c ? c.value : '';
+      } else {
+        out[key] = $$('input:checked', el).map(i => i.value);
+      }
+    } else if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      out[key] = el.checked;
+    } else {
+      out[key] = el.value;
+    }
+  });
+  // 「其他」自由填寫，附加到對應的複選清單
+  $$('[data-other-for]', scope).forEach(function (el) {
+    const key = el.dataset.otherFor;
+    const extra = String(el.value || '').trim();
+    if (extra && Array.isArray(out[key])) out[key] = out[key].concat(extra.split(/[、,，]/).map(s => s.trim()).filter(Boolean));
+    if (extra) out['__other_' + key] = extra;
+  });
+  return out;
+}
+
+function setFields(scope, attr, data) {
+  $$('[data-' + attr + ']', scope).forEach(function (el) {
+    const key = el.dataset[attr];
+    const v = data[key];
+    if (v === undefined) return;
+    if (el.classList.contains('chk-group') || el.classList.contains('radio-col')) {
+      if (el.dataset.type === 'radio') {
+        $$('input', el).forEach(i => { i.checked = (i.value === v); });
+      } else {
+        const arr = Array.isArray(v) ? v : [];
+        $$('input', el).forEach(i => { i.checked = arr.indexOf(i.value) >= 0; });
+      }
+    } else if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      el.checked = !!v;
+    } else {
+      el.value = v;
+    }
+  });
+  $$('[data-other-for]', scope).forEach(function (el) {
+    const v = data['__other_' + el.dataset.otherFor];
+    if (v !== undefined) el.value = v;
+  });
+}
+
+
+/* ── 收集整份表單 ─────────────────────────────────────── */
+function collect(includeFiles) {
+  const main = readFields(document, 'm');
+
+  const admissions = $$('.adm-card').map(function (card) {
+    const a = readFields(card.querySelector('.adm-fields'), 'a');
+
+    a.interviews = $$('.q-item', card).map(function (q) {
+      return readFields(q, 'q');
+    }).filter(q => String(q.question || '').trim());
+
+    a.practicals = $$('.p-item', card).map(function (p) {
+      const o = readFields(p, 'p');
+      const cat = o.file_category || '術科題目';
+      if (includeFiles) {
+        o.files = (p._files || []).map(f => ({
+          name: f.name, mimeType: f.mimeType, data: f.data, category: cat
+        }));
+      }
+      return o;
+    }).filter(p => String(p.content || '').trim() || String(p.subject || '').trim() ||
+                   (includeFiles && (p.files || []).length));
+
+    return a;
+  }).filter(a => String(a.univ || '').trim() || String(a.major || '').trim());
+
+  return { main: main, admissions: admissions };
+}
+
+
+/* ── 進度與送出狀態 ───────────────────────────────────── */
+const REQUIRED = [
+  { sel: '[data-m="grad_year"]', label: '畢業學年度' },
+  { sel: '[data-m="name"]', label: '姓名' },
+  { sel: '[data-m="email"]', label: '聯絡 Email' },
+  { sel: '[data-m="current_place"]', label: '目前就讀學校／服務單位' },
+  { sel: '[data-m="main_path"]', label: '主要出路' },
+  { sel: '[data-m="reflection"]', label: '整體心得' },
+  { sel: '[data-m="publish_level"]', label: '公開層級' }
+];
+
+function requiredFilled(item) {
+  const el = $(item.sel);
+  if (!el) return false;
+  if (el.classList.contains('radio-col')) return !!el.querySelector('input:checked');
+  return String(el.value || '').trim() !== '';
+}
+
+function updateProgress() {
+  let done = REQUIRED.filter(requiredFilled).length;
+  let total = REQUIRED.length + 2;
+  const adviceOk = ['advice_1', 'advice_2', 'advice_3']
+    .some(k => String(($('[data-m="' + k + '"]') || {}).value || '').trim());
+  if (adviceOk) done++;
+  if ($('#chkPdpa').checked) done++;
+
+  const pct = Math.round(done / total * 100);
+  $('#progFill').style.width = pct + '%';
+  $('#progText').textContent = '必填完成度 ' + pct + '%（' + done + '/' + total + '）';
+
+  const refl = $('[data-m="reflection"]').value.replace(/\s/g, '').length;
+  $('#reflCount').textContent = refl > 0
+    ? '目前 ' + refl + ' 字' + (refl < 200 ? '（建議 200 字以上）' : ' 👍')
+    : '建議 200 字以上';
+}
+
+function updateSubmitState() {
+  const ok = $('#chkPdpa').checked;
+  const btn = $('#btnSubmit');
+  btn.disabled = !ok;
+  btn.textContent = ok ? '送出表單' : '請先勾選第 H 段的個資同意';
+}
+
+
+/* ── 前端驗證 ─────────────────────────────────────────── */
+function clientValidate(payload) {
+  $$('.invalid').forEach(el => el.classList.remove('invalid'));
+
+  for (let i = 0; i < REQUIRED.length; i++) {
+    if (!requiredFilled(REQUIRED[i])) {
+      return { msg: '「' + REQUIRED[i].label + '」還沒填。', sel: REQUIRED[i].sel };
+    }
+  }
+  const email = String(payload.main.email || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { msg: 'Email 格式看起來不正確，請再檢查一次。', sel: '[data-m="email"]' };
+  }
+  const adviceOk = ['advice_1', 'advice_2', 'advice_3']
+    .some(k => String(payload.main[k] || '').trim());
+  if (!adviceOk) {
+    return { msg: '「給學弟妹的建議」至少要填一則。', sel: '[data-m="advice_1"]' };
+  }
+  if (!payload.main.consent_pdpa) {
+    return { msg: '需要勾選個人資料蒐集同意才能送出。', sel: '#chkPdpa' };
+  }
+  for (let j = 0; j < payload.admissions.length; j++) {
+    const a = payload.admissions[j];
+    if (!String(a.univ || '').trim() || !String(a.major || '').trim()) {
+      return { msg: '第 ' + (j + 1) + ' 個志願的學校名稱與科系名稱都要填寫（不填的話請刪掉那張卡片）。' };
+    }
+  }
+  return null;
+}
+
+
+/* ── 送出 ─────────────────────────────────────────────── */
+function onSubmit() {
+  hideMsg();
+  const payload = collect(true);
+
+  const err = clientValidate(payload);
+  if (err) {
+    showMsg(err.msg, 'err');
+    if (err.sel) {
+      const el = $(err.sel);
+      if (el) {
+        el.classList.add('invalid');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    return;
+  }
+
+  const n = totalFileCount();
+  showOverlay('資料傳送中…', n ? '含 ' + n + ' 張相片，可能需要 10～30 秒，請勿關閉頁面' : '請勿關閉頁面');
+  $('#btnSubmit').disabled = true;
+
+  callSubmit(payload, onSubmitDone, onSubmitFail);
+}
+
+/** 依執行模式送出資料 */
+function callSubmit(payload, onOk, onFail) {
+  const mode = runMode();
+
+  if (mode === 'gas') {
+    google.script.run.withSuccessHandler(onOk).withFailureHandler(onFail).submitForm(payload);
+    return;
+  }
+
+  if (mode === 'api') {
+    // text/plain 是關鍵：讓瀏覽器視為簡單請求，不送 preflight（Apps Script 不回應 OPTIONS）
+    fetch(String(window.GRAD_API_URL).trim(), {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (txt) {
+        let res;
+        try {
+          res = JSON.parse(txt);
+        } catch (e) {
+          throw new Error('伺服器回傳的不是預期格式，通常代表 Apps Script 尚未正確部署，' +
+                          '或「誰可以存取」沒有設成「所有人」。');
+        }
+        onOk(res);
+      })
+      .catch(onFail);
+    return;
+  }
+
+  // demo：假裝送出，讓操作流程完整
+  setTimeout(function () {
+    onOk({ ok: true, submissionId: 'DEMO01', demo: true });
+  }, 900);
+}
+
+function onSubmitDone(res) {
+  if (res && res.ok) {
+    document.body.dataset.submitted = '1';
+    clearTimeout(draftTimer);            // 取消排程中的自動存，否則草稿會被寫回去
+    if (!res.demo) clearDraftSilent();   // 示範模式保留草稿，方便繼續試
+    showSuccess(res.submissionId, !!res.demo);
+  } else {
+    hideOverlay();
+    $('#btnSubmit').disabled = false;
+    updateSubmitState();
+    showMsg((res && res.message) || '送出失敗，請稍後再試。', 'err');
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+}
+
+function onSubmitFail(e) {
+  hideOverlay();
+  $('#btnSubmit').disabled = false;
+  updateSubmitState();
+  showMsg('連線發生問題：' + (e && e.message ? e.message : e) +
+          '\n資料還留在頁面上，請檢查網路後再按一次送出。', 'err');
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function showSuccess(code, isDemo) {
+  $('#overlay').classList.remove('show');
+
+  const body = isDemo
+    ? '<div class="result-icon">🧪</div>' +
+      '<h2 style="margin:0 0 6px;font-size:20px">示範模式：流程走完了</h2>' +
+      '<p style="color:#6b7a8c;font-size:14px;margin:0">這次操作<strong>沒有</strong>寫入任何資料，也沒有寄信。</p>' +
+      '<div class="result-code">' + code + '</div>' +
+      '<p style="font-size:14px;color:#6b7a8c">正式版送出後，這裡會顯示你的真實提交編號。</p>' +
+      '<button type="button" class="btn-ghost" onclick="location.reload()">再試一次</button>'
+    : '<div class="result-icon">✅</div>' +
+      '<h2 style="margin:0 0 6px;font-size:20px">送出成功，謝謝你！</h2>' +
+      '<p style="color:#6b7a8c;font-size:14px;margin:0">你的經驗會成為學弟妹最實用的參考資料。</p>' +
+      '<div class="result-code">' + code + '</div>' +
+      '<p style="font-size:14px;color:#6b7a8c">這是你的提交編號，建議截圖保存。<br>' +
+      '確認信已寄到你填寫的 Email（可能會在垃圾郵件匣）。<br>' +
+      '資料需要修改的話，請帶著編號聯絡科上老師。</p>';
+
+  document.querySelector('main').innerHTML =
+    '<section class="card"><div class="card-body" style="text-align:center;padding:36px 20px">' +
+    body + '</div></section>';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+/* ── 訊息 / 遮罩 ──────────────────────────────────────── */
+function showMsg(text, kind) {
+  const b = $('#msgBox');
+  b.textContent = text;
+  b.className = 'msg-box ' + kind;
+}
+function hideMsg() { $('#msgBox').className = 'msg-box'; }
+
+function showOverlay(title, text) {
+  $('#ovTitle').textContent = title;
+  $('#ovText').textContent = text || '';
+  $('#overlay').classList.add('show');
+}
+function hideOverlay() { $('#overlay').classList.remove('show'); }
+
+
+/* ── 草稿 ─────────────────────────────────────────────── */
+function hasAnyInput() {
+  const d = collect(false);
+  return String(d.main.name || '').trim() !== '' ||
+         String(d.main.reflection || '').trim() !== '' ||
+         d.admissions.length > 0;
+}
+
+function markDirty() {
+  if (document.body.dataset.submitted === '1') return;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(saveDraft, 1200);
+}
+
+function saveDraft() {
+  // 送出成功後畫面已被替換，這裡若還執行會拋錯，
+  // 而且會把剛清掉的草稿又寫回去，害學生下次開表單被問要不要還原
+  if (document.body.dataset.submitted === '1' || !$('#draftInfo')) return;
+  try {
+    const data = collect(false);   // 相片不存草稿（容量限制）
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ at: Date.now(), data: data }));
+    const t = new Date();
+    $('#draftInfo').textContent = '草稿已自動儲存 ' +
+      ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) +
+      '（相片不會存入草稿）';
+  } catch (e) {
+    $('#draftInfo').textContent = '草稿儲存失敗（瀏覽器空間不足）';
+  }
+}
+
+function restoreDraft() {
+  let raw;
+  try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) { return; }
+  if (!raw) return;
+
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { return; }
+  if (!parsed || !parsed.data) return;
+
+  const when = new Date(parsed.at);
+  const label = when.getMonth() + 1 + '/' + when.getDate() + ' ' +
+                ('0' + when.getHours()).slice(-2) + ':' + ('0' + when.getMinutes()).slice(-2);
+  if (!confirm('偵測到 ' + label + ' 未完成的草稿，要載入接著填嗎？\n（選「取消」會從空白表單開始，草稿仍會保留）')) return;
+
+  const d = parsed.data;
+  setFields(document, 'm', d.main || {});
+  (d.admissions || []).forEach(a => addAdmission(a));
+  $('#draftInfo').textContent = '已載入 ' + label + ' 的草稿（相片需重新上傳）';
+}
+
+function clearDraft() {
+  if (!confirm('確定要清除草稿並清空整份表單？此動作無法復原。')) return;
+  clearDraftSilent();
+  location.reload();
+}
+
+function clearDraftSilent() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+}
+</script>
+
 
 </body>
 </html>
