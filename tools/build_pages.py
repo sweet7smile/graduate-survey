@@ -31,6 +31,42 @@ SECRETS = [
 ]
 
 
+def check_commas(config_src: str) -> None:
+    """
+    抓「物件屬性少了結尾逗號」這種錯。
+
+    config.gs 會被內嵌進四個靜態頁，一個少掉的逗號會讓整包 script 解析失敗，
+    四頁一起壞掉。括號配對檢查抓不到這種錯，所以在這裡另外擋。
+
+    規則：在物件內（大括號深度 >= 1）的一行，如果結尾不是逗號也不是開括號，
+    而下一個有效行又不是收尾括號，那就是漏了逗號。
+    """
+    lines = []
+    for i, raw in enumerate(config_src.split("\n"), 1):
+        code = re.sub(r"//.*$", "", raw).rstrip()
+        if code.strip():
+            lines.append((i, code))
+
+    depth = 0
+    for idx, (lineno, code) in enumerate(lines):
+        stripped = code.strip()
+        opens = code.count("{") + code.count("[")
+        closes = code.count("}") + code.count("]")
+
+        if depth >= 1 and idx + 1 < len(lines):
+            nxt = lines[idx + 1][1].strip()
+            ends_ok = stripped.endswith((",", "{", "[", "(", ";"))
+            next_is_close = nxt.startswith(("}", "]", ")"))
+            if not ends_ok and not next_is_close and opens == closes:
+                raise SystemExit(
+                    f"config.gs 第 {lineno} 行結尾少了逗號：\n"
+                    f"    {stripped}\n"
+                    f"  下一行：{nxt}\n"
+                    f"  （少一個逗號會讓內嵌進網頁的整段 script 解析失敗，四頁一起壞掉）"
+                )
+        depth += opens - closes
+
+
 def scrub(config_src: str) -> str:
     """把真實 ID 與 Email 換成佔位字串"""
     out = config_src
@@ -79,6 +115,7 @@ def main() -> None:
     common_src = (GAS / "common.html").read_text(encoding="utf-8")
     config_src = (GAS / "config.gs").read_text(encoding="utf-8")
 
+    check_commas(config_src)
     clean_config = scrub(config_src)
 
     # 1) 產生公開用的設定檔範本
