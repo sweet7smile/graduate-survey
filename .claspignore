@@ -1,0 +1,10 @@
+# 路徑相對於 .clasp.json 裡的 rootDir（也就是 gas/）
+#
+# ⚠️ config.example.gs 一定要排除。
+#    它和 config.gs 一樣宣告了 CONFIG / OPTIONS / SCHEMA / LAYOUT，
+#    兩個檔案一起推上去會變成重複宣告，Apps Script 會直接報
+#    「Identifier 'CONFIG' has already been declared」。
+config.example.gs
+
+# 文件不需要推上 Apps Script
+**/*.md

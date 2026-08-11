@@ -66,7 +66,86 @@ Google Apps Script + Google Sheet + Google Drive。
 
 ---
 
-## A. 部署 Apps Script（正式運作必要）
+## A0. 用 clasp 同步（強烈建議，取代手動複製貼上）
+
+11 個檔案一個個貼進 Apps Script 編輯器又慢又容易漏。
+[clasp](https://github.com/google/clasp) 是 Google 官方的命令列工具，
+設定一次之後改完程式碼只要 `clasp push`，全部檔案一次同步。
+
+### 一次性設定
+
+**1. 安裝 Node.js 與 clasp**
+
+```bash
+winget install OpenJS.NodeJS.LTS
+```
+
+裝完**關掉終端機再重開**（PATH 才會生效），然後：
+
+```bash
+npm install -g @google/clasp
+```
+
+**2. 開啟 Apps Script API**
+
+到 <https://script.google.com/home/usersettings> 把「Google Apps Script API」打開。
+沒開的話 clasp 會回 `User has not enabled the Apps Script API`。
+
+**3. 登入**
+
+```bash
+clasp login
+```
+
+會開瀏覽器讓你授權。憑證存在 `~/.clasprc.json`，等同帳號密碼，已列入 `.gitignore`。
+
+**4. 建立 `.clasp.json`**
+
+把 `.clasp.json.example` 複製成 `.clasp.json`，填入你的指令碼 ID。
+ID 在 Apps Script 編輯器的網址列：
+
+```
+https://script.google.com/home/projects/【這一段就是 scriptId】/edit
+```
+
+或在編輯器左下角「專案設定」→「指令碼 ID」。
+
+### 日常使用
+
+```bash
+clasp status
+```
+
+先看**這次會推上去哪些檔案**。應該是 11 個 `.gs`/`.html` 加 `appsscript.json`，
+**不該出現 `config.example.gs`**（它和 `config.gs` 重複宣告 CONFIG，一起推會壞）。
+
+確認無誤後：
+
+```bash
+clasp push
+```
+
+推完要讓學生看到新版，還是得更新部署。用指令的話：
+
+```bash
+clasp deployments
+```
+
+找到你正在用的那個部署 ID，然後：
+
+```bash
+clasp deploy -i 你的部署ID -d "更新說明"
+```
+
+`-i` 指定既有部署 = **網址不會變**。不加 `-i` 會建立新部署、產生新網址，
+那 `config.js` 裡的 `/exec` 也要跟著改，通常不是你要的。
+
+> `gas/appsscript.json` 已經把「執行身分：我」與「誰可以存取：所有人」寫進設定，
+> 所以用 clasp 部署不會再漏掉那兩個下拉選單。
+
+---
+
+## A. 部署 Apps Script（手動複製貼上，沒裝 clasp 時用）
 
 ### 1. 建立專案
 

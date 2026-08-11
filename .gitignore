@@ -5,6 +5,12 @@ gas/config.gs
 # 本機工具設定
 .claude/
 
+# clasp
+# .clasprc.json 是 OAuth 憑證，等同帳號密碼，絕對不能上傳
+.clasprc.json
+# .clasp.json 含你的指令碼 ID，公開版請看 .clasp.json.example
+.clasp.json
+
 # 系統產生
 desktop.ini
 Thumbs.db
