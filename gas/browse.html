@@ -31,7 +31,7 @@
           <label>學校</label>
           <select id="fUniv"><option value="">全部學校</option></select>
         </div>
-        <div class="field" style="margin:0">
+        <div class="field" style="margin:0" id="wrapMajor">
           <label>科系</label>
           <select id="fMajor"><option value="">全部科系</option></select>
         </div>
@@ -39,7 +39,7 @@
           <label>畢業學年度</label>
           <select id="fYear"><option value="">全部年度</option></select>
         </div>
-        <div class="field" style="margin:0">
+        <div class="field" style="margin:0" id="wrapCat">
           <label>題目分類</label>
           <select id="fCat"><option value="">全部分類</option></select>
         </div>
@@ -187,8 +187,21 @@ function passFilter(item, textFields) {
   return true;
 }
 
+/**
+ * 依目前分頁顯示／隱藏用不到的篩選器。
+ * 心得分頁只比對 學校／學年度／關鍵字，
+ * 「科系」與「題目分類」在這個分頁完全沒被使用，
+ * 留在畫面上會讓人以為設了有效果。
+ */
+function syncFilterVisibility() {
+  const isPeople = VIEW === 'people';
+  document.getElementById('wrapMajor').style.display = isPeople ? 'none' : '';
+  document.getElementById('wrapCat').style.display = isPeople ? 'none' : '';
+}
+
 function render() {
   if (!DATA) return;
+  syncFilterVisibility();
   const box = document.getElementById('result');
 
   if (VIEW === 'questions') {
