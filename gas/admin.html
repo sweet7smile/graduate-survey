@@ -253,6 +253,7 @@ function renderTable() {
   }
 
   tb.innerHTML = rows.map(function (x) {
+    // 「不公開」選項雖已下架，舊資料仍可能是這個值，這裡要顯示得出來
     const anon = x.publishLevel.indexOf('匿名') === 0 ? 'gray'
                : (x.publishLevel.indexOf('僅供校內') === 0 ? 'err' : 'ok');
     const shortLevel = x.publishLevel.indexOf('完全公開') === 0 ? '公開'

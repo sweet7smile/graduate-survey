@@ -662,7 +662,10 @@ function browse_(req) {
     const level = String(d.publish_level || '');
 
     if (CONFIG.BROWSE_REQUIRE_APPROVED && status !== '通過') return;
-    if (level.indexOf('僅供校內教師') === 0) return;      // 明確不公開
+
+    // 「僅供校內教師參考，不公開」這個選項已從表單移除，但這段過濾必須保留：
+    // 下架選項不會改變已存檔的值，拿掉這行會讓當初選過的人資料突然被公開。
+    if (level.indexOf('僅供校內教師') === 0) return;
 
     const anonymous = level.indexOf('匿名') === 0;
     const id = String(d.submission_id);
