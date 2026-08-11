@@ -1335,7 +1335,10 @@ function renderTable() {
       '<td class="num">' + x.counts.prc + '</td>' +
       '<td class="num">' + x.counts.file + '</td>' +
       '<td>' + statusTag(x.reviewStatus) +
-        (x.reviewNote ? '<div style="font-size:11px;color:var(--muted);margin-top:3px">' +
+        // 只有「退回修改」狀態才顯示備註——避免舊資料裡殘留的退件意見，
+        // 顯示在「通過」狀態旁邊造成誤解（例如「通過」下面掛著「退回」字樣）
+        (x.reviewStatus === '退回修改' && x.reviewNote ?
+          '<div style="font-size:11px;color:var(--muted);margin-top:3px">' +
           escapeHtml(x.reviewNote.slice(0, 30)) + '</div>' : '') + '</td>' +
       '<td><div class="row-actions">' +
         '<button type="button" class="btn-sm" onclick="openDetail(\'' +

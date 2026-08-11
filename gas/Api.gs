@@ -423,7 +423,10 @@ function adminReview_(req) {
     const colAt = indexOfKey_(SCHEMA.MAIN, 'reviewed_at') + 1;
 
     sh.getRange(row.row, colStatus).setValue(status);
-    sh.getRange(row.row, colNote).setValue(String(req.note || ''));
+    // 審核意見只在「退回修改」時有意義（會被寄進退件通知信給學生）。
+    // 通過或改回待審時清空，不然舊的退件意見會一直跟著顯示，
+    // 讓「通過」狀態旁邊還掛著上一輪「退回」的備註，讀起來自相矛盾。
+    sh.getRange(row.row, colNote).setValue(status === '退回修改' ? String(req.note || '') : '');
     sh.getRange(row.row, colAt).setValue(new Date());
     SpreadsheetApp.flush();
 
