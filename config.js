@@ -7,4 +7,4 @@
    網址取得方式：Apps Script →「部署」→「管理部署作業」
    →複製「網頁應用程式」網址（結尾是 /exec，不是 /dev）
    ═══════════════════════════════════════════════════════ */
-window.GRAD_API_URL = '';
+window.GRAD_API_URL = 'https://script.google.com/macros/s/AKfycbyB7odOfR_7SvWKSjwp3uqxnCP-X5bj9u8UEsrfRJcdTq8G4Czs9m9cukZEyclqI658og/exec';
