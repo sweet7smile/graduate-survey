@@ -502,9 +502,9 @@ table.data td.num { text-align: center; color: var(--muted); }
   </section>
 
   <div class="tabs" style="margin-bottom:14px">
-    <button type="button" class="tab active" data-view="questions">❓ 口試題目</button>
+    <button type="button" class="tab active" data-view="people">🎓 學長姐心得</button>
+    <button type="button" class="tab" data-view="questions">❓ 口試題目</button>
     <button type="button" class="tab" data-view="practicals">🔧 術科</button>
-    <button type="button" class="tab" data-view="people">🎓 學長姐心得</button>
   </div>
 
   <div id="result"></div>
@@ -1042,7 +1042,7 @@ function showBanner(container, text, kind) {
 
 <script>
 let DATA = null;
-let VIEW = 'questions';
+let VIEW = 'people';      // 預設顯示學長姐心得，要與上面第一個分頁的 data-view 一致
 
 document.addEventListener('DOMContentLoaded', function () {
   renderNav('browse');
