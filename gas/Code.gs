@@ -61,7 +61,8 @@ function initSetup() {
     const name = CONFIG.SHEETS[schemaKey];
     const headers = SCHEMA[schemaKey].map(function (c) { return c.label; });
     const existed = !!ss.getSheetByName(name);
-    ensureSheet_(ss, name, headers);
+    const sh = ensureSheet_(ss, name, headers);
+    applyFormatting_(sh, SCHEMA[schemaKey], schemaKey);
     if (!existed) created.push(name);
   });
 
@@ -85,7 +86,10 @@ function initSetup() {
 
   const msg = '初始化完成。\n試算表：' + ss.getName() +
               '\n新建分頁：' + (created.length ? created.join(', ') : '（無，皆已存在）') +
-              '\n相片資料夾：' + folderName;
+              '\n相片資料夾：' + folderName +
+              '\n已套用版面：中文表頭、欄位代碼註解、欄寬、凍結欄、篩選器、交錯底色' +
+              '\n（本函式可重複執行，只調整版面不會動到資料；' +
+              '但若 SCHEMA 欄位順序有改，請先確認分頁沒有舊資料，否則會與新表頭對不上）';
   Logger.log(msg);
   return msg;
 }
@@ -113,6 +117,62 @@ function ensureSheet_(ss, name, headers) {
     sh.setFrozenRows(1);
   }
   return sh;
+}
+
+
+/**
+ * 套用閱讀用版面：表頭樣式、欄寬、凍結、篩選器、交錯底色。
+ * 可重複執行，不會動到任何資料。
+ */
+function applyFormatting_(sh, schema, schemaKey) {
+  const width = schema.length;
+
+  // ── 表頭：深藍底白字、置中、自動換行，並在每欄加上欄位代碼註解 ──
+  const head = sh.getRange(1, 1, 1, width);
+  head.setFontWeight('bold')
+      .setBackground('#1a3a5c')
+      .setFontColor('#ffffff')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setWrap(true);
+  sh.setRowHeight(1, 46);
+
+  const notes = [schema.map(function (c) {
+    return '欄位代碼：' + c.key + '\n（改欄位請對照 config.gs 的 SCHEMA）';
+  })];
+  head.setNotes(notes);
+
+  // ── 欄寬 ──
+  schema.forEach(function (col, i) {
+    const w = LAYOUT.COL_WIDTHS[col.key] || LAYOUT.DEFAULT_COL_WIDTH;
+    sh.setColumnWidth(i + 1, w);
+  });
+
+  // ── 凍結：橫向捲動時保留辨識用欄位 ──
+  sh.setFrozenRows(1);
+  const frozen = LAYOUT.FROZEN_COLUMNS[schemaKey] || 0;
+  if (frozen > 0 && frozen <= width) sh.setFrozenColumns(frozen);
+
+  // ── 資料區：切齊上方、長文字裁切不換行，避免一篇心得把整列撐到滿螢幕 ──
+  const dataRows = sh.getMaxRows() - 1;
+  if (dataRows > 0) {
+    sh.getRange(2, 1, dataRows, width)
+      .setVerticalAlignment('top')
+      .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  }
+
+  // ── 篩選器：方便依學年度、學校、結果快速過濾 ──
+  const existingFilter = sh.getFilter();
+  if (existingFilter) existingFilter.remove();
+  sh.getRange(1, 1, sh.getMaxRows(), width).createFilter();
+
+  // ── 交錯底色：只套資料區，不含表頭，否則佈景主題的表頭色會蓋掉上面的深藍 ──
+  // 重套前必須先移除舊的，同一範圍套第二次會拋錯。
+  sh.getBandings().forEach(function (b) { b.remove(); });
+  if (dataRows > 0) {
+    sh.getRange(2, 1, dataRows, width)
+      .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, false, false);
+  }
 }
 
 

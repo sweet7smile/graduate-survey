@@ -804,19 +804,21 @@ const OPTIONS = {
  * 寫入時依此順序組列，改順序只要動這裡。
  */
 const SCHEMA = {
+  // 欄位順序＝Sheet 欄位順序。姓名刻意排在前面，
+  // 搭配凍結前 4 欄，橫向捲動時仍看得到這是誰的資料。
   MAIN: [
     { key: 'submission_id',    label: '提交編號' },
     { key: 'submitted_at',     label: '提交時間' },
     { key: 'grad_year',        label: '畢業學年度' },
-    { key: 'school',           label: '畢業學校' },
-    { key: 'dept',             label: '科別' },
+    { key: 'name',             label: '姓名' },
     { key: 'class_name',       label: '班級' },
     { key: 'seat_no',          label: '座號' },
-    { key: 'name',             label: '姓名' },
     { key: 'email',            label: '聯絡Email' },
     { key: 'phone',            label: '手機' },
     { key: 'social_id',        label: 'IG/Line' },
     { key: 'current_place',    label: '目前就讀學校或服務單位' },
+    { key: 'school',           label: '畢業學校' },
+    { key: 'dept',             label: '科別' },
     { key: 'main_path',        label: '主要出路' },
     { key: 'exam_group',       label: '報考群類' },
     { key: 'tve_ch',           label: '統測-國文' },
@@ -910,6 +912,49 @@ const SCHEMA = {
     { key: 'message',        label: '訊息' },
     { key: 'detail',         label: '細節' }
   ]
+};
+
+
+/**
+ * Sheet 版面設定 —— 讓 40 幾欄的資料還讀得下去。
+ * 沒列到的欄位一律用 DEFAULT_COL_WIDTH。
+ */
+const LAYOUT = {
+  DEFAULT_COL_WIDTH: 110,
+
+  COL_WIDTHS: {
+    submission_id: 95,  submitted_at: 135, grad_year: 85,  name: 95,
+    class_name: 90,     seat_no: 60,       email: 195,     phone: 110,
+    social_id: 110,     current_place: 230, school: 210,   dept: 70,
+    main_path: 155,     exam_group: 165,   rank_pct: 100,
+    certificates: 230,  experiences: 300,  activities: 230,
+    portfolio_focus: 300, portfolio_tool: 120,
+    reflection: 400,    advice_1: 230,     advice_2: 230,  advice_3: 230,
+    do_earlier: 270,    regret: 270,       publish_level: 220,
+    review_status: 90,  idx: 65,           admission_idx: 65,
+    univ: 175,          major: 160,        channel: 155,
+    stage1_result: 110, stage2_items: 205, stage2_score: 100,
+    final_result: 105,  result_rank: 70,   is_enrolled: 80,
+    format: 100,        prof_count: 80,    duration_min: 95,
+    flow: 300,          q_no: 55,          question: 340,
+    categories: 185,    my_answer: 300,    better_answer: 300,
+    difficulty: 85,     tip: 250,
+    subject: 140,       equipment: 270,    content: 350,
+    prep_advice: 270,   file_urls: 230,
+    file_id: 120,       file_name: 210,    file_url: 230,
+    category: 100,      ref_idx: 75,       uploaded_at: 135,
+    timestamp: 135,     level: 70,         message: 330,   detail: 330
+  },
+
+  // 凍結欄數：橫向捲動時保留辨識用的前幾欄
+  FROZEN_COLUMNS: {
+    MAIN: 4,        // 編號、時間、學年度、姓名
+    ADMISSIONS: 4,  // 編號、志願序、學校、科系
+    INTERVIEW: 4,
+    PRACTICAL: 4,
+    FILES: 1,
+    LOG: 2
+  }
 };
 
 
