@@ -36,6 +36,15 @@ const CONFIG = {
   BLOCK_DUPLICATE: true,              // 同 Email + 同學年度 是否阻擋重複提交
   LOCK_TIMEOUT_MS: 30000,
 
+  // ── 登入與審核 ──────────────────────────────────────────
+  // ⚠️ 教師帳密不放這裡也不放任何前端檔案。
+  //    本專案是公開 repo，且 build_pages.py 會把 config.gs 內嵌進公開網頁。
+  //    帳密以「鹽值 + SHA-256 雜湊」存在 Script Properties，
+  //    請執行一次 setupTeacherAccount() 設定（見 Code.gs）。
+  SESSION_HOURS: 6,                   // 登入有效時數（CacheService 上限 6 小時）
+  LOCK_AFTER_APPROVED: true,          // 審核「通過」後畢業生不能再修改
+  BROWSE_REQUIRE_APPROVED: true,      // 瀏覽頁只顯示審核通過的資料
+
   // ── Sheet 分頁名稱 ──────────────────────────────────────
   SHEETS: {
     MAIN: 'Main',
@@ -103,7 +112,9 @@ const OPTIONS = {
     '僅供校內教師參考，不公開'
   ],
 
-  FILE_CATEGORIES: ['術科題目', '作品照', '備審目錄', '其他']
+  FILE_CATEGORIES: ['術科題目', '作品照', '備審目錄', '其他'],
+
+  REVIEW_STATUSES: ['待審', '通過', '退回修改']
 };
 
 
@@ -155,7 +166,10 @@ const SCHEMA = {
     { key: 'consent_pdpa',     label: '個資同意' },
     { key: 'publish_level',    label: '公開層級' },
     { key: 'consent_photo',    label: '相片授權' },
-    { key: 'review_status',    label: '審核狀態' }
+    { key: 'review_status',    label: '審核狀態' },
+    { key: 'review_note',      label: '審核意見' },
+    { key: 'reviewed_at',      label: '審核時間' },
+    { key: 'updated_at',       label: '最後修改時間' }
   ],
 
   ADMISSIONS: [
@@ -210,6 +224,7 @@ const SCHEMA = {
     { key: 'file_url',       label: '檢視連結' },
     { key: 'category',       label: '用途' },
     { key: 'ref_idx',        label: '對應志願序' },
+    { key: 'prc_idx',        label: '對應術科序' },   // 編輯時要靠這個把相片還原到正確的術科項目
     { key: 'uploaded_at',    label: '上傳時間' }
   ],
 
@@ -239,7 +254,9 @@ const LAYOUT = {
     portfolio_focus: 300, portfolio_tool: 120,
     reflection: 400,    advice_1: 230,     advice_2: 230,  advice_3: 230,
     do_earlier: 270,    regret: 270,       publish_level: 220,
-    review_status: 90,  idx: 65,           admission_idx: 65,
+    review_status: 90,  review_note: 260,  reviewed_at: 135,
+    updated_at: 135,    idx: 65,           admission_idx: 65,
+    prc_idx: 75,
     univ: 175,          major: 160,        channel: 155,
     stage1_result: 110, stage2_items: 205, stage2_score: 100,
     final_result: 105,  result_rank: 70,   is_enrolled: 80,
@@ -292,6 +309,7 @@ function getClientConfig() {
     maxTotalBytes: CONFIG.MAX_TOTAL_BYTES,
     imageMaxEdge: CONFIG.IMAGE_MAX_EDGE,
     imageQuality: CONFIG.IMAGE_QUALITY,
+    lockAfterApproved: CONFIG.LOCK_AFTER_APPROVED,
     options: OPTIONS
   };
 }

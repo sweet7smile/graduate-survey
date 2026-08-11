@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('styles'); ?>
+</head>
+<body>
+
+<header class="top">
+  <h1>登入</h1>
+  <p id="hdr-sub">國立霧峰高級農工職業學校　電子科</p>
+</header>
+
+<div class="login-wrap">
+
+  <div class="tabs">
+    <button type="button" class="tab active" id="tabStudent">🎓 畢業生登入修改</button>
+    <button type="button" class="tab" id="tabTeacher">👩‍🏫 教師登入審核</button>
+  </div>
+
+  <div id="msgBox" class="msg-box"></div>
+
+  <!-- 畢業生 -->
+  <section class="card" id="paneStudent">
+    <div class="card-body">
+      <p class="hint">
+        用<strong>提交編號</strong>加上<strong>當初填寫的 Email</strong> 登入，就能修改自己的資料。
+        提交編號在送出後的確認信裡（6 碼，例如 <code>7F115A</code>）。
+      </p>
+      <div class="field">
+        <label class="req">提交編號</label>
+        <input type="text" id="sCode" maxlength="6" placeholder="例：7F115A"
+               autocomplete="off" style="text-transform:uppercase;letter-spacing:3px;font-weight:700">
+      </div>
+      <div class="field">
+        <label class="req">當初填寫的 Email</label>
+        <input type="email" id="sEmail" inputmode="email" placeholder="you@example.com">
+      </div>
+      <button type="button" class="btn-submit" id="btnStudent">登入</button>
+      <p class="hint" style="margin:14px 0 0">
+        找不到編號？請聯絡科上老師協助查詢。<br>
+        <strong>老師審核通過後資料會鎖定</strong>，屆時就無法自行修改了。
+      </p>
+    </div>
+  </section>
+
+  <!-- 教師 -->
+  <section class="card" id="paneTeacher" style="display:none">
+    <div class="card-body">
+      <p class="hint">教師專用。登入後可審核、檢視完整資料與匯出 CSV。</p>
+      <div class="field">
+        <label class="req">帳號</label>
+        <input type="text" id="tAcc" autocomplete="username">
+      </div>
+      <div class="field">
+        <label class="req">密碼</label>
+        <input type="password" id="tPw" autocomplete="current-password">
+      </div>
+      <button type="button" class="btn-submit" id="btnTeacher">登入</button>
+    </div>
+  </section>
+
+</div>
+
+<footer class="bottom">
+  國立霧峰高級農工職業學校　電子科　畢業生升學資料蒐集系統
+</footer>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <div style="font-weight:700">驗證中…</div>
+  </div>
+</div>
+
+<script>
+  const CFG = <?!= JSON.stringify(getClientConfig()) ?>;
+  const GAS_BASE_URL = '<?!= getWebAppUrl() ?>';
+</script>
+<?!= include('common'); ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  renderNav('login');
+  document.getElementById('hdr-sub').textContent = CFG.school + '　' + CFG.dept;
+
+  // 已登入就直接導向對應頁面，不用再登一次
+  const s = getSession();
+  if (s && s.role === 'teacher') { location.href = pageUrl('admin'); return; }
+
+  if (qs('role') === 'teacher') switchTab('teacher');
+
+  document.getElementById('tabStudent').onclick = function () { switchTab('student'); };
+  document.getElementById('tabTeacher').onclick = function () { switchTab('teacher'); };
+  document.getElementById('btnStudent').onclick = doStudentLogin;
+  document.getElementById('btnTeacher').onclick = doTeacherLogin;
+
+  // Enter 直接送出
+  ['sCode', 'sEmail'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doStudentLogin();
+    });
+  });
+  ['tAcc', 'tPw'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doTeacherLogin();
+    });
+  });
+});
+
+function switchTab(which) {
+  const isStudent = which === 'student';
+  document.getElementById('tabStudent').classList.toggle('active', isStudent);
+  document.getElementById('tabTeacher').classList.toggle('active', !isStudent);
+  document.getElementById('paneStudent').style.display = isStudent ? '' : 'none';
+  document.getElementById('paneTeacher').style.display = isStudent ? 'none' : '';
+  document.getElementById('msgBox').className = 'msg-box';
+}
+
+function busy(on) { document.getElementById('overlay').classList.toggle('show', !!on); }
+
+function doStudentLogin() {
+  const code = document.getElementById('sCode').value.trim().toUpperCase();
+  const email = document.getElementById('sEmail').value.trim();
+  if (!code || !email) {
+    showBanner('#msgBox', '提交編號與 Email 都要填寫。');
+    return;
+  }
+  busy(true);
+  api('loginStudent', { code: code, email: email })
+    .then(function (res) {
+      busy(false);
+      if (!res.ok) { showBanner('#msgBox', res.message || '登入失敗。'); return; }
+      setSession({ token: res.token, role: 'student', label: res.label });
+      if (res.locked) {
+        showBanner('#msgBox',
+          '登入成功，但這筆資料已通過老師審核，目前為唯讀狀態，無法修改。', 'ok');
+        setTimeout(function () { location.href = pageUrl('index') + sep() + 'mode=edit'; }, 1800);
+      } else {
+        location.href = pageUrl('index') + sep() + 'mode=edit';
+      }
+    })
+    .catch(function (e) {
+      busy(false);
+      showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
+    });
+}
+
+function doTeacherLogin() {
+  const account = document.getElementById('tAcc').value.trim();
+  const password = document.getElementById('tPw').value;
+  if (!account || !password) {
+    showBanner('#msgBox', '帳號與密碼都要填寫。');
+    return;
+  }
+  busy(true);
+  api('loginTeacher', { account: account, password: password })
+    .then(function (res) {
+      busy(false);
+      if (!res.ok) { showBanner('#msgBox', res.message || '登入失敗。'); return; }
+      setSession({ token: res.token, role: 'teacher', label: res.label });
+      location.href = pageUrl('admin');
+    })
+    .catch(function (e) {
+      busy(false);
+      showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
+    });
+}
+
+/** GAS 模式的網址已經帶了 ?page=，接參數要用 & */
+function sep() { return runMode() === 'gas' ? '&' : '?'; }
+</script>
+
+</body>
+</html>

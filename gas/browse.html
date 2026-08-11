@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('styles'); ?>
+</head>
+<body>
+
+<header class="top">
+  <h1>歷屆升學經驗查詢</h1>
+  <p id="hdr-sub">國立霧峰高級農工職業學校　電子科</p>
+</header>
+
+<main class="wide">
+
+  <p class="hint">
+    這裡是歷屆學長姐留下的真實經驗。<strong>只會顯示經老師審核通過、且本人同意公開的資料</strong>，
+    不會出現任何聯絡方式。選擇匿名的學長姐只顯示姓氏。
+  </p>
+
+  <div id="msgBox" class="msg-box"></div>
+
+  <div class="stat-row" id="statRow"></div>
+
+  <section class="card">
+    <h2><span class="num">🔍</span>篩選條件</h2>
+    <div class="card-body">
+      <div class="filter-bar">
+        <div class="field" style="margin:0">
+          <label>學校</label>
+          <select id="fUniv"><option value="">全部學校</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>科系</label>
+          <select id="fMajor"><option value="">全部科系</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>畢業學年度</label>
+          <select id="fYear"><option value="">全部年度</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>題目分類</label>
+          <select id="fCat"><option value="">全部分類</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin:0">
+        <label>關鍵字</label>
+        <input type="text" id="fKw" placeholder="搜尋題目、心得、術科內容…">
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs" style="margin-bottom:14px">
+    <button type="button" class="tab active" data-view="questions">❓ 口試題目</button>
+    <button type="button" class="tab" data-view="practicals">🔧 術科</button>
+    <button type="button" class="tab" data-view="people">🎓 學長姐心得</button>
+  </div>
+
+  <div id="result"></div>
+
+</main>
+
+<footer class="bottom">
+  國立霧峰高級農工職業學校　電子科　畢業生升學資料蒐集系統
+</footer>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <div style="font-weight:700">載入中…</div>
+  </div>
+</div>
+
+<script>
+  const CFG = <?!= JSON.stringify(getClientConfig()) ?>;
+  const GAS_BASE_URL = '<?!= getWebAppUrl() ?>';
+</script>
+<?!= include('common'); ?>
+<script>
+let DATA = null;
+let VIEW = 'questions';
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderNav('browse');
+  document.getElementById('hdr-sub').textContent = CFG.school + '　' + CFG.dept;
+
+  document.querySelectorAll('.tab[data-view]').forEach(function (t) {
+    t.onclick = function () {
+      document.querySelectorAll('.tab[data-view]').forEach(function (x) { x.classList.remove('active'); });
+      t.classList.add('active');
+      VIEW = t.dataset.view;
+      render();
+    };
+  });
+
+  ['fUniv', 'fMajor', 'fYear', 'fCat'].forEach(function (id) {
+    document.getElementById(id).onchange = render;
+  });
+  let kwTimer = null;
+  document.getElementById('fKw').oninput = function () {
+    clearTimeout(kwTimer);
+    kwTimer = setTimeout(render, 250);
+  };
+
+  load();
+});
+
+function load() {
+  document.getElementById('overlay').classList.add('show');
+  api('browse', {})
+    .then(function (res) {
+      document.getElementById('overlay').classList.remove('show');
+      if (!res.ok) {
+        showBanner('#msgBox', res.message || '載入失敗。', res.demo ? 'ok' : 'err');
+        document.getElementById('result').innerHTML =
+          '<div class="empty">' + escapeHtml(res.message || '無法載入資料') + '</div>';
+        return;
+      }
+      DATA = res;
+      buildFilters();
+      renderStat();
+      render();
+    })
+    .catch(function (e) {
+      document.getElementById('overlay').classList.remove('show');
+      showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
+    });
+}
+
+function uniqueSorted(arr) {
+  return Array.from(new Set(arr.filter(Boolean))).sort(function (a, b) {
+    return String(a).localeCompare(String(b), 'zh-Hant');
+  });
+}
+
+function fillSelect(id, values, allLabel) {
+  const el = document.getElementById(id);
+  el.innerHTML = '<option value="">' + allLabel + '</option>';
+  values.forEach(function (v) {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    el.appendChild(o);
+  });
+}
+
+function buildFilters() {
+  const all = DATA.questions.concat(DATA.practicals, DATA.admissions);
+  fillSelect('fUniv', uniqueSorted(all.map(function (x) { return x.univ; })), '全部學校');
+  fillSelect('fMajor', uniqueSorted(all.map(function (x) { return x.major; })), '全部科系');
+  fillSelect('fYear', uniqueSorted(DATA.people.map(function (p) { return p.gradYear; }))
+    .map(String), '全部年度');
+  const cats = [];
+  DATA.questions.forEach(function (q) { (q.categories || []).forEach(function (c) { cats.push(c); }); });
+  fillSelect('fCat', uniqueSorted(cats), '全部分類');
+}
+
+function renderStat() {
+  document.getElementById('statRow').innerHTML =
+    '<div class="stat-chip"><b>' + DATA.stat.people + '</b>位學長姐</div>' +
+    '<div class="stat-chip"><b>' + DATA.stat.questions + '</b>題口試題目</div>' +
+    '<div class="stat-chip"><b>' + DATA.stat.practicals + '</b>項術科紀錄</div>' +
+    '<div class="stat-chip"><b>' + DATA.stat.admissions + '</b>筆校系結果</div>';
+}
+
+/** 依畢業學年度篩選時要靠 key 對應到人 */
+function yearOf(key) {
+  const p = DATA.people.filter(function (x) { return x.key === key; })[0];
+  return p ? String(p.gradYear) : '';
+}
+
+function passFilter(item, textFields) {
+  const univ = document.getElementById('fUniv').value;
+  const major = document.getElementById('fMajor').value;
+  const year = document.getElementById('fYear').value;
+  const cat = document.getElementById('fCat').value;
+  const kw = document.getElementById('fKw').value.trim().toLowerCase();
+
+  if (univ && item.univ !== univ) return false;
+  if (major && item.major !== major) return false;
+  if (year && yearOf(item.key) !== year) return false;
+  if (cat && (!item.categories || item.categories.indexOf(cat) < 0)) return false;
+  if (kw) {
+    const hay = textFields.map(function (f) { return String(item[f] || ''); }).join(' ').toLowerCase();
+    if (hay.indexOf(kw) < 0) return false;
+  }
+  return true;
+}
+
+function render() {
+  if (!DATA) return;
+  const box = document.getElementById('result');
+
+  if (VIEW === 'questions') {
+    const list = DATA.questions.filter(function (q) {
+      return passFilter(q, ['question', 'betterAnswer', 'tip']);
+    });
+    box.innerHTML = list.length ? list.map(questionCard).join('')
+      : emptyMsg('沒有符合條件的口試題目');
+
+  } else if (VIEW === 'practicals') {
+    const list = DATA.practicals.filter(function (p) {
+      return passFilter(p, ['content', 'equipment', 'prepAdvice', 'subject']);
+    });
+    box.innerHTML = list.length ? list.map(practicalCard).join('')
+      : emptyMsg('沒有符合條件的術科紀錄');
+
+  } else {
+    const univ = document.getElementById('fUniv').value;
+    const year = document.getElementById('fYear').value;
+    const kw = document.getElementById('fKw').value.trim().toLowerCase();
+    const list = DATA.people.filter(function (p) {
+      if (year && String(p.gradYear) !== year) return false;
+      if (univ) {
+        // 這個人有沒有錄取／報考該校
+        const hit = DATA.admissions.some(function (a) { return a.key === p.key && a.univ === univ; });
+        if (!hit) return false;
+      }
+      if (kw) {
+        const hay = [p.reflection, p.doEarlier, p.regret, p.currentPlace,
+                     (p.advices || []).join(' '), p.experiences].join(' ').toLowerCase();
+        if (hay.indexOf(kw) < 0) return false;
+      }
+      return true;
+    });
+    box.innerHTML = list.length ? list.map(personCard).join('')
+      : emptyMsg('沒有符合條件的學長姐');
+  }
+}
+
+function emptyMsg(t) {
+  return '<div class="empty">' + escapeHtml(t) + '<br><span style="font-size:13px">' +
+         '試試放寬篩選條件，或清空關鍵字。</span></div>';
+}
+
+function questionCard(q) {
+  const stars = q.difficulty ? '難度 ' + '★'.repeat(Number(q.difficulty) || 0) : '';
+  return '<div class="q-card">' +
+    '<div class="q-meta">' +
+      '<span class="tag">' + escapeHtml(q.univ) + '</span>' +
+      '<span class="tag gray">' + escapeHtml(q.major) + '</span>' +
+      (q.format ? '<span>' + escapeHtml(q.format) + '</span>' : '') +
+      (stars ? '<span>' + stars + '</span>' : '') +
+      '<span>' + escapeHtml(yearOf(q.key)) + ' 級</span>' +
+      (q.categories || []).map(function (c) {
+        return '<span class="tag warn">' + escapeHtml(c) + '</span>';
+      }).join('') +
+    '</div>' +
+    '<div class="q-text">' + escapeHtml(q.question) + '</div>' +
+    (q.betterAnswer ? '<div class="q-extra"><b>學長姐回頭看建議這樣答：</b>\n' +
+      escapeHtml(q.betterAnswer) + '</div>' : '') +
+    (q.tip ? '<div class="q-extra"><b>提醒：</b>' + escapeHtml(q.tip) + '</div>' : '') +
+  '</div>';
+}
+
+function practicalCard(p) {
+  return '<div class="q-card">' +
+    '<div class="q-meta">' +
+      '<span class="tag">' + escapeHtml(p.univ) + '</span>' +
+      '<span class="tag gray">' + escapeHtml(p.major) + '</span>' +
+      (p.subject ? '<span class="tag warn">' + escapeHtml(p.subject) + '</span>' : '') +
+      (p.durationMin ? '<span>' + escapeHtml(p.durationMin) + ' 分鐘</span>' : '') +
+      '<span>' + escapeHtml(yearOf(p.key)) + ' 級</span>' +
+    '</div>' +
+    '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
+    (p.equipment ? '<div class="q-extra"><b>現場設備／工具：</b>\n' + escapeHtml(p.equipment) + '</div>' : '') +
+    (p.prepAdvice ? '<div class="q-extra"><b>準備方式建議：</b>\n' + escapeHtml(p.prepAdvice) + '</div>' : '') +
+  '</div>';
+}
+
+function personCard(p) {
+  const adms = DATA.admissions.filter(function (a) { return a.key === p.key; });
+  return '<div class="q-card">' +
+    '<div class="q-meta">' +
+      '<span class="tag">' + escapeHtml(p.gradYear) + ' 級</span>' +
+      '<strong style="font-size:15px;color:#1c2733">' + escapeHtml(p.displayName) + '</strong>' +
+      (p.mainPath ? '<span class="tag gray">' + escapeHtml(p.mainPath) + '</span>' : '') +
+      (p.willingQa ? '<span class="tag ok">願意回答提問</span>' : '') +
+    '</div>' +
+    (p.currentPlace ? '<div style="font-size:14px;margin-bottom:6px">🎯 ' +
+      escapeHtml(p.currentPlace) + '</div>' : '') +
+    (adms.length ? '<div class="q-meta">' + adms.map(function (a) {
+      const cls = a.finalResult === '正取' ? 'ok' : (a.finalResult === '備取' ? 'warn' : 'gray');
+      return '<span class="tag ' + cls + '">' + escapeHtml(a.univ + ' ' + a.major + ' ' +
+             a.finalResult + (a.resultRank ? a.resultRank : '')) + '</span>';
+    }).join('') + '</div>' : '') +
+    (p.certificates && p.certificates.length ?
+      '<div class="q-extra"><b>證照：</b>' + escapeHtml(p.certificates.join('、')) + '</div>' : '') +
+    (p.reflection ? '<div class="q-extra"><b>心得：</b>\n' + escapeHtml(p.reflection) + '</div>' : '') +
+    (p.advices && p.advices.length ? '<div class="q-extra"><b>給學弟妹的建議：</b>\n' +
+      p.advices.map(function (a, i) { return (i + 1) + '. ' + escapeHtml(a); }).join('\n') + '</div>' : '') +
+    (p.doEarlier ? '<div class="q-extra"><b>高一高二該先做什麼：</b>\n' + escapeHtml(p.doEarlier) + '</div>' : '') +
+    (p.regret ? '<div class="q-extra"><b>最後悔沒做的事：</b>\n' + escapeHtml(p.regret) + '</div>' : '') +
+  '</div>';
+}
+</script>
+
+</body>
+</html>

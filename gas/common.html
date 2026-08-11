@@ -1,0 +1,164 @@
+<script>
+/* ═══════════════════════════════════════════════════════════
+   common.html — 各頁共用：執行模式、API client、session、導覽列
+   ═══════════════════════════════════════════════════════════ */
+
+const SESS_KEY = 'wufai_ee_session_v1';
+
+/**
+ * 執行模式：
+ *   gas  — Apps Script 託管，用 google.script.run
+ *   api  — 靜態託管且 config.js 已填 /exec 網址，用 fetch + doPost
+ *   demo — 靜態託管但沒填網址，不連後端
+ */
+function runMode() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) return 'gas';
+  if (window.GRAD_API_URL && String(window.GRAD_API_URL).trim()) return 'api';
+  return 'demo';
+}
+
+/** 產生指向其他頁的網址，兩種託管方式的路徑規則不同 */
+function pageUrl(page) {
+  if (runMode() === 'gas') {
+    const base = (typeof GAS_BASE_URL !== 'undefined' && GAS_BASE_URL) ? GAS_BASE_URL : '';
+    return base + (page === 'index' ? '' : '?page=' + page);
+  }
+  return page === 'index' ? 'index.html' : page + '.html';
+}
+
+/**
+ * 呼叫後端。回傳 Promise<回應物件>。
+ * demo 模式一律回傳固定訊息，不會有網路請求。
+ */
+function api(action, params) {
+  const body = Object.assign({ action: action }, params || {});
+  const mode = runMode();
+
+  if (mode === 'demo') {
+    return Promise.resolve({
+      ok: false,
+      demo: true,
+      message: '目前是介面示範模式，未連接後端資料庫。'
+    });
+  }
+
+  if (mode === 'gas') {
+    // 注意：不能直接叫 routeApi_，Apps Script 的底線結尾函式是私有的、前端叫不到
+    return new Promise(function (resolve, reject) {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        .apiCall(body);
+    });
+  }
+
+  // text/plain 讓瀏覽器視為簡單請求，避開 Apps Script 無法回應的 CORS preflight
+  return fetch(String(window.GRAD_API_URL).trim(), {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.text(); })
+    .then(function (txt) {
+      try {
+        return JSON.parse(txt);
+      } catch (e) {
+        throw new Error('伺服器回應格式不正確，通常代表 Apps Script 未正確部署，' +
+                        '或「誰可以存取」沒有設成「所有人」。');
+      }
+    });
+}
+
+
+/* ── session（存在 sessionStorage，關掉分頁就失效）────────── */
+
+function getSession() {
+  try {
+    const raw = sessionStorage.getItem(SESS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setSession(s) {
+  try { sessionStorage.setItem(SESS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem(SESS_KEY); } catch (e) {}
+}
+
+function logout() {
+  const s = getSession();
+  if (s && s.token) { try { api('logout', { token: s.token }); } catch (e) {} }
+  clearSession();
+  location.href = pageUrl('index');
+}
+
+
+/* ── 導覽列 ──────────────────────────────────────────────── */
+
+/**
+ * 在 <body> 最前面插入導覽列。
+ * @param {string} active 目前頁面代碼，用來標示高亮
+ */
+function renderNav(active) {
+  const s = getSession();
+  const nav = document.createElement('nav');
+  nav.className = 'topnav';
+
+  const items = [
+    { key: 'index',  label: '📝 填寫表單',   href: pageUrl('index') },
+    { key: 'browse', label: '🔍 歷屆經驗查詢', href: pageUrl('browse') }
+  ];
+
+  let right = '';
+  if (s && s.role === 'teacher') {
+    items.push({ key: 'admin', label: '🗂️ 教師後台', href: pageUrl('admin') });
+    right = '<span class="nav-user">👩‍🏫 ' + escapeHtml(s.label || '教師') + '</span>' +
+            '<button type="button" class="nav-btn" onclick="logout()">登出</button>';
+  } else if (s && s.role === 'student') {
+    items.push({ key: 'edit', label: '✏️ 修改我的資料', href: pageUrl('index') + (runMode() === 'gas' ? '&' : '?') + 'mode=edit' });
+    right = '<span class="nav-user">🎓 ' + escapeHtml(s.label || '') + '</span>' +
+            '<button type="button" class="nav-btn" onclick="logout()">登出</button>';
+  } else {
+    right = '<a class="nav-btn" href="' + pageUrl('login') + '?role=student">畢業生登入修改</a>' +
+            '<a class="nav-btn primary" href="' + pageUrl('login') + '?role=teacher">教師登入審核</a>';
+  }
+
+  nav.innerHTML =
+    '<div class="nav-inner">' +
+      '<div class="nav-links">' +
+        items.map(function (it) {
+          return '<a href="' + it.href + '" class="nav-link' +
+                 (it.key === active ? ' active' : '') + '">' + it.label + '</a>';
+        }).join('') +
+      '</div>' +
+      '<div class="nav-right">' + right + '</div>' +
+    '</div>';
+
+  document.body.insertBefore(nav, document.body.firstChild);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** 讀取網址參數 */
+function qs(name) {
+  const m = new RegExp('[?&]' + name + '=([^&#]*)').exec(location.search);
+  return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+}
+
+/** 統一的錯誤訊息呈現 */
+function showBanner(container, text, kind) {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg-box ' + (kind || 'err');
+}
+</script>

@@ -42,10 +42,41 @@ def scrub(config_src: str) -> str:
     return out
 
 
+PAGES = ["index", "browse", "login", "admin"]
+
+
+def build_page(name: str, styles: str, script: str, common: str, clean_config: str) -> str:
+    """把一個 GAS 樣板展開成自包含的靜態頁"""
+    page = (GAS / f"{name}.html").read_text(encoding="utf-8")
+
+    page = page.replace("<?!= include('styles'); ?>", styles)
+    page = page.replace("<?!= include('common'); ?>", common)
+    page = page.replace("<?!= include('script'); ?>", script)
+
+    # CFG 改成在瀏覽器端呼叫，資料來源就是內嵌的 config.gs
+    inline_cfg = (
+        '<script src="config.js"></script>\n'
+        "<script>\n"
+        "/* ── 以下由 config.gs 自動內嵌（ID 與 Email 已移除）"
+        "，請勿手動修改，改 config.gs 後重跑 tools/build_pages.py ── */\n"
+        + clean_config
+        + "\n</script>\n"
+    )
+    page = page.replace("<script>\n  const CFG =", inline_cfg + "<script>\n  const CFG =")
+    page = page.replace("<?!= JSON.stringify(getClientConfig()) ?>", "getClientConfig()")
+
+    # 靜態版沒有 Apps Script 服務網址，頁面連結改用相對路徑
+    page = page.replace("'<?!= getWebAppUrl() ?>'", "''")
+
+    if "<?!=" in page or "<?=" in page:
+        raise SystemExit(f"{name}.html 還有沒展開的 GAS 樣板語法。")
+    return page
+
+
 def main() -> None:
-    index_src = (GAS / "index.html").read_text(encoding="utf-8")
     styles_src = (GAS / "styles.html").read_text(encoding="utf-8")
     script_src = (GAS / "script.html").read_text(encoding="utf-8")
+    common_src = (GAS / "common.html").read_text(encoding="utf-8")
     config_src = (GAS / "config.gs").read_text(encoding="utf-8")
 
     clean_config = scrub(config_src)
@@ -58,30 +89,13 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    # 2) 展開 GAS 樣板語法
-    page = index_src.replace("<?!= include('styles'); ?>", styles_src)
-    page = page.replace("<?!= include('script'); ?>", script_src)
+    # 2) 逐頁展開並寫出
+    sizes = {}
+    for name in PAGES:
+        page = build_page(name, styles_src, script_src, common_src, clean_config)
+        (SITE / f"{name}.html").write_text(page, encoding="utf-8")
+        sizes[name] = len(page)
 
-    # CFG 改成在瀏覽器端呼叫，資料來源就是內嵌的 config.gs
-    inline_cfg = (
-        '<script src="config.js"></script>\n'
-        "<script>\n"
-        "/* ── 以下由 config.gs 自動內嵌（ID 與 Email 已移除）"
-        "，請勿手動修改，改 config.gs 後重跑 tools/build_pages.py ── */\n"
-        + clean_config
-        + "\n</script>\n"
-    )
-    page = page.replace(
-        "<script>\n  const CFG =",
-        inline_cfg + "<script>\n  const CFG =",
-    )
-    page = page.replace("<?!= JSON.stringify(getClientConfig()) ?>", "getClientConfig()")
-
-    if "<?!=" in page:
-        raise SystemExit("還有沒展開的 GAS 樣板語法，請檢查 index.html。")
-
-    # 3) 寫出
-    (SITE / "index.html").write_text(page, encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
 
     cfg_js = SITE / "config.js"
@@ -100,9 +114,10 @@ def main() -> None:
             encoding="utf-8",
         )
 
-    print(f"index.html            {len(page):,} chars")
-    print(f"gas/config.example.gs ID 與 Email 已抹除")
-    print(f"config.js             {'保留原有設定' if cfg_js.exists() else '新建'}")
+    for name in PAGES:
+        print(f"{name + '.html':<22}{sizes[name]:,} chars")
+    print(f"{'gas/config.example.gs':<22}ID 與 Email 已抹除")
+    print(f"{'config.js':<22}{'保留原有設定' if cfg_js.exists() else '新建'}")
 
 
 if __name__ == "__main__":

@@ -10,10 +10,21 @@
 //  Web App 進入點
 // ═══════════════════════════════════════════════════════════
 
-function doGet() {
-  return HtmlService.createTemplateFromFile('index')
+/** 允許的頁面：檔名 → 標題。用白名單避免 ?page= 被亂帶值 */
+const PAGES = {
+  index:  '填寫表單',
+  browse: '歷屆經驗查詢',
+  login:  '登入',
+  admin:  '教師後台'
+};
+
+function doGet(e) {
+  const req = (e && e.parameter && e.parameter.page) ? String(e.parameter.page) : 'index';
+  const page = PAGES[req] ? req : 'index';
+
+  return HtmlService.createTemplateFromFile(page)
     .evaluate()
-    .setTitle(CONFIG.DEPT + ' 畢業生升學資料蒐集')
+    .setTitle(CONFIG.DEPT + ' 畢業生升學資料蒐集 — ' + PAGES[page])
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -37,15 +48,59 @@ function doPost(e) {
     if (!e || !e.postData || !e.postData.contents) {
       res = fail_('沒有收到資料內容。');
     } else {
-      res = submitForm(JSON.parse(e.postData.contents));
+      const req = JSON.parse(e.postData.contents);
+      res = routeApi_(req);
     }
   } catch (err) {
-    writeLog_('ERROR', '', 'doPost 解析失敗', String(err && err.stack ? err.stack : err));
-    res = fail_('資料格式錯誤：' + (err && err.message ? err.message : err));
+    // requireRole_ 之類的權限錯誤走這裡，轉成前端看得懂的訊息
+    const msg = err && err.message ? err.message : String(err);
+    writeLog_('ERROR', '', 'doPost 失敗：' + msg, String(err && err.stack ? err.stack : ''));
+    res = fail_(msg);
   }
   return ContentService
     .createTextOutput(JSON.stringify(res))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * 給 google.script.run 呼叫的公開包裝。
+ * Apps Script 規定底線結尾的函式為私有、前端叫不到，所以不能直接暴露 routeApi_。
+ */
+function apiCall(req) {
+  try {
+    return routeApi_(req || {});
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    writeLog_('ERROR', '', 'apiCall 失敗：' + msg, String(err && err.stack ? err.stack : ''));
+    return fail_(msg);
+  }
+}
+
+/** GAS 模式下頁面之間互相連結需要的基底網址；尚未部署時回空字串 */
+function getWebAppUrl() {
+  try {
+    return ScriptApp.getService().getUrl() || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+/** action 路由。沒帶 action 視為 submit，維持舊版前端相容 */
+function routeApi_(req) {
+  switch (String(req.action || 'submit')) {
+    case 'submit':       return submitForm(req);
+    case 'loginTeacher': return loginTeacher_(req);
+    case 'loginStudent': return loginStudent_(req);
+    case 'logout':       return logout_(req);
+    case 'loadOwn':      return loadOwn_(req);
+    case 'updateOwn':    return updateOwn_(req);
+    case 'adminList':    return adminList_(req);
+    case 'adminDetail':  return adminDetail_(req);
+    case 'adminReview':  return adminReview_(req);
+    case 'adminExport':  return adminExport_(req);
+    case 'browse':       return browse_(req);
+    default:             return fail_('不支援的操作：' + req.action);
+  }
 }
 
 
@@ -217,91 +272,21 @@ function submitForm(payload) {
     // ── 上傳相片（先做，失敗才不會留下半筆資料）──
     const uploaded = uploadAllFiles_(admissions, main, submissionId, shortId);
 
-    // ── 組列 ──
-    const mainRow = buildRow_(SCHEMA.MAIN, Object.assign({}, main, {
-      submission_id: submissionId,
+    // ── 寫入（與「畢業生修改」共用同一段邏輯，避免兩邊格式走鐘）──
+    const n = writeRecord_(submissionId, main, admissions, uploaded, {
       submitted_at: now,
-      school: CONFIG.SCHOOL,
-      dept: CONFIG.DEPT,
       review_status: '待審'
-    }));
-
-    const admRows = [];
-    const itvRows = [];
-    const prcRows = [];
-
-    admissions.forEach(function (a, ai) {
-      const idx = ai + 1;
-      const univ = a.univ || '';
-      const major = a.major || '';
-
-      admRows.push(buildRow_(SCHEMA.ADMISSIONS, Object.assign({}, a, {
-        submission_id: submissionId,
-        idx: idx,
-        stage2_items: joinList_(a.stage2_items),
-        is_enrolled: a.is_enrolled ? 'V' : ''
-      })));
-
-      (a.interviews || []).forEach(function (q, qi) {
-        if (!String(q.question || '').trim()) return;
-        itvRows.push(buildRow_(SCHEMA.INTERVIEW, Object.assign({}, q, {
-          submission_id: submissionId,
-          admission_idx: idx,
-          univ: univ,
-          major: major,
-          format: a.itv_format || '',
-          prof_count: a.itv_prof_count || '',
-          duration_min: a.itv_duration_min || '',
-          flow: a.itv_flow || '',
-          q_no: qi + 1,
-          categories: joinList_(q.categories)
-        })));
-      });
-
-      (a.practicals || []).forEach(function (p, pi) {
-        if (!String(p.content || '').trim() && !String(p.subject || '').trim()) return;
-        const urls = uploaded
-          .filter(function (f) { return f.admIdx === ai && f.prcIdx === pi; })
-          .map(function (f) { return f.url; });
-        prcRows.push(buildRow_(SCHEMA.PRACTICAL, Object.assign({}, p, {
-          submission_id: submissionId,
-          admission_idx: idx,
-          univ: univ,
-          major: major,
-          file_urls: urls.join('\n')
-        })));
-      });
     });
-
-    const fileRows = uploaded.map(function (f) {
-      return buildRow_(SCHEMA.FILES, {
-        submission_id: submissionId,
-        file_id: f.id,
-        file_name: f.name,
-        file_url: f.url,
-        category: f.category,
-        ref_idx: f.admIdx + 1,
-        uploaded_at: now
-      });
-    });
-
-    // ── 寫入 ──
-    const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-    appendRows_(ss, CONFIG.SHEETS.MAIN, SCHEMA.MAIN, [mainRow]);
-    appendRows_(ss, CONFIG.SHEETS.ADMISSIONS, SCHEMA.ADMISSIONS, admRows);
-    appendRows_(ss, CONFIG.SHEETS.INTERVIEW, SCHEMA.INTERVIEW, itvRows);
-    appendRows_(ss, CONFIG.SHEETS.PRACTICAL, SCHEMA.PRACTICAL, prcRows);
-    appendRows_(ss, CONFIG.SHEETS.FILES, SCHEMA.FILES, fileRows);
     SpreadsheetApp.flush();
 
     writeLog_('INFO', submissionId,
       '提交成功：' + main.name + ' / ' + main.grad_year + ' 學年度',
-      '校系 ' + admRows.length + ' 筆、口試題 ' + itvRows.length +
-      ' 題、術科 ' + prcRows.length + ' 項、相片 ' + fileRows.length + ' 張');
+      '校系 ' + n.adm + ' 筆、口試題 ' + n.itv +
+      ' 題、術科 ' + n.prc + ' 項、相片 ' + n.file + ' 張');
 
     // ── 寄信（失敗不影響資料已寫入）──
     try {
-      sendMails_(main, shortId, admRows.length, itvRows.length, prcRows.length);
+      sendMails_(main, shortId, n.adm, n.itv, n.prc);
     } catch (mailErr) {
       writeLog_('WARN', submissionId, '寄信失敗（資料已成功寫入）', String(mailErr));
     }
@@ -584,7 +569,10 @@ function sendMails_(main, shortId, admCount, itvCount, prcCount) {
         '<p>你填寫的畢業生升學資料已經收到，非常感謝你願意把經驗留給學弟妹。</p>' +
         '<pre style="background:#f4f6f8;padding:12px;border-radius:8px;white-space:pre-wrap">' +
         escapeHtml_(summary) + '</pre>' +
-        '<p>請保留這封信作為憑證。若資料需要修改，請回信或聯絡科上老師。</p>' +
+        '<p><strong>要修改資料的話</strong>，請到表單網站點「登入修改」，' +
+        '用<strong>提交編號 ' + escapeHtml_(shortId) + '</strong> 加上<strong>這個 Email</strong> 登入即可。</p>' +
+        '<p style="color:#b45309">請保留這封信，並不要把提交編號轉傳給別人 —— ' +
+        '編號加上你的 Email 就是修改資料的憑證。老師審核通過後就會鎖定，屆時無法再自行修改。</p>' +
         '<p style="color:#777;font-size:13px">' + escapeHtml_(CONFIG.SCHOOL) + ' ' +
         escapeHtml_(CONFIG.DEPT) + '</p></div>'
     });

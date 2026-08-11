@@ -9,17 +9,10 @@ const DIFFICULTY = ['1（很簡單）', '2', '3（普通）', '4', '5（很難�
 let radioSeq = 0;
 let draftTimer = null;
 
-/**
- * 執行模式自動判斷 —— 同一份程式碼三種情境共用：
- *   gas  : 由 Apps Script 的 HtmlService 託管，直接呼叫 google.script.run
- *   api  : 靜態託管（GitHub Pages）且已在 config.js 填入 GAS 的 /exec 網址，走 doPost
- *   demo : 靜態託管但沒填網址，示範模式，不會寫入任何資料
- */
-function runMode() {
-  if (typeof google !== 'undefined' && google.script && google.script.run) return 'gas';
-  if (window.GRAD_API_URL && String(window.GRAD_API_URL).trim()) return 'api';
-  return 'demo';
-}
+/* runMode() / api() / renderNav() 等共用函式定義在 common.html */
+
+let EDIT_MODE = false;      // 畢業生登入後修改既有資料
+let EDIT_LOCKED = false;    // 已審核通過，唯讀
 
 const $  = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -32,13 +25,98 @@ document.addEventListener('DOMContentLoaded', function () {
 
   fillOptions(document);
   bindGlobalEvents();
-  showModeBanner();
-  restoreDraft();
-  updateProgress();
 
-  // 至少先給一張校系卡片，降低不知道要按什麼的門檻
-  if (!$$('.adm-card').length) addAdmission();
+  const sess = getSession();
+  EDIT_MODE = qs('mode') === 'edit' && sess && sess.role === 'student';
+  renderNav(EDIT_MODE ? 'edit' : 'index');
+
+  if (EDIT_MODE) {
+    loadOwnRecord();          // 載入既有資料，載完才顯示表單
+  } else {
+    showModeBanner();
+    restoreDraft();
+    updateProgress();
+    if (!$$('.adm-card').length) addAdmission();
+  }
 });
+
+
+/* ── 編輯模式：載入自己既有的資料 ─────────────────────── */
+
+function loadOwnRecord() {
+  showOverlay('載入你的資料…', '請稍候');
+  api('loadOwn', { token: getSession().token })
+    .then(function (res) {
+      hideOverlay();
+      if (!res.ok) {
+        if (/登入已逾時|權限不足|重新登入/.test(res.message || '')) {
+          clearSession();
+          location.href = pageUrl('login') + '?role=student';
+          return;
+        }
+        showMsg(res.message || '載入失敗。', 'err');
+        return;
+      }
+
+      EDIT_LOCKED = !!res.locked;
+
+      // 套用既有資料
+      setFields(document, 'm', res.record.main || {});
+      $$('.adm-card').forEach(function (c) { c.remove(); });
+      (res.record.admissions || []).forEach(function (a) { addAdmission(a); });
+      if (!$$('.adm-card').length) addAdmission();
+
+      renderEditHeader(res);
+      updateProgress();
+      updateSubmitState();
+    })
+    .catch(function (e) {
+      hideOverlay();
+      showMsg('連線失敗：' + (e && e.message ? e.message : e), 'err');
+    });
+}
+
+/** 編輯模式的頁面提示：審核狀態、退件意見、鎖定狀態 */
+function renderEditHeader(res) {
+  const main = document.querySelector('main');
+  const box = document.createElement('div');
+  const status = res.reviewStatus || '待審';
+
+  if (EDIT_LOCKED) {
+    box.className = 'hint warn';
+    box.innerHTML = '<strong>🔒 這筆資料已通過老師審核，目前為唯讀狀態</strong><br>' +
+      '你可以檢視內容，但無法修改。如需更正，請聯絡科上老師。' +
+      (res.reviewNote ? '<br><br><strong>老師的意見：</strong>' + escapeHtml(res.reviewNote) : '');
+  } else if (status === '退回修改') {
+    box.className = 'hint warn';
+    box.innerHTML = '<strong>↩ 老師請你修改後重新送出</strong><br>' +
+      '<strong>審核意見：</strong>' + escapeHtml(res.reviewNote || '（未填寫）') +
+      '<br>修改完按最下方的「儲存修改」即可，狀態會自動回到待審。';
+  } else {
+    box.className = 'hint';
+    box.innerHTML = '<strong>✏️ 修改模式</strong>　目前審核狀態：<strong>' +
+      escapeHtml(status) + '</strong><br>' +
+      '改完請按最下方的「儲存修改」。老師審核通過之後就不能再改了。';
+  }
+  main.insertBefore(box, main.firstChild);
+
+  document.querySelector('header.top h1').textContent = '修改我的升學資料';
+
+  if (EDIT_LOCKED) {
+    // 唯讀：鎖住所有輸入元件與動態按鈕
+    $$('input, select, textarea').forEach(function (el) { el.disabled = true; });
+    $$('.btn-add, .btn-del, .file-drop').forEach(function (el) {
+      el.style.display = 'none';
+    });
+    $('#btnSubmit').style.display = 'none';
+    $('#btnClearDraft').style.display = 'none';
+    $('#draftInfo').textContent = '唯讀模式，不會儲存草稿';
+  } else {
+    $('#btnSubmit').textContent = '儲存修改';
+    $('#btnClearDraft').style.display = 'none';
+    $('#draftInfo').textContent = '修改模式不使用草稿，請直接按「儲存修改」';
+  }
+}
 
 
 /* ── 選項填充 ─────────────────────────────────────────── */
@@ -205,10 +283,51 @@ function addPractical(card, data) {
   fillOptions(item);
   item.querySelector('.max-files').textContent = CFG.maxFilesPerPractical;
   item._files = [];
+  item._existing = [];
   renumberSub(card, '.p-item', '.p-no');
-  if (data) setFields(item, 'p', data);
+  if (data) {
+    setFields(item, 'p', data);
+    // 編輯模式：把已經存在雲端的相片列出來，讓使用者可以個別移除
+    item._existing = (data.existingFiles || []).slice();
+    renderExisting(item);
+  }
   markDirty();
   return item;
+}
+
+/** 已上傳過的相片（只有連結，沒有縮圖資料）*/
+function renderExisting(item) {
+  let box = item.querySelector('.existing-files');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'existing-files';
+    box.style.marginBottom = '8px';
+    const thumbs = item.querySelector('.thumbs');
+    thumbs.parentNode.insertBefore(box, thumbs);
+  }
+  if (!item._existing.length) { box.innerHTML = ''; return; }
+
+  box.innerHTML = '<div style="font-size:13px;color:#6b7a8c;margin-bottom:5px">' +
+    '已上傳的相片（' + item._existing.length + '）</div>' +
+    item._existing.map(function (f, i) {
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+        '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener" ' +
+        'style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📷 ' +
+        escapeHtml(f.name) + '</a>' +
+        (EDIT_LOCKED ? '' :
+          '<button type="button" class="btn-del" data-rm-existing="' + i + '">移除</button>') +
+        '</div>';
+    }).join('');
+
+  box.querySelectorAll('[data-rm-existing]').forEach(function (btn) {
+    btn.onclick = function () {
+      const i = Number(btn.dataset.rmExisting);
+      if (!confirm('確定要移除「' + item._existing[i].name + '」？儲存後就不會再顯示在資料裡。')) return;
+      item._existing.splice(i, 1);
+      renderExisting(item);
+      markDirty();
+    };
+  });
 }
 
 function renumberAdmissions() {
@@ -420,10 +539,12 @@ function collect(includeFiles) {
         o.files = (p._files || []).map(f => ({
           name: f.name, mimeType: f.mimeType, data: f.data, category: cat
         }));
+        // 編輯模式：告訴後端哪些既有相片要保留，沒列到的就會被移除
+        o.keptFiles = (p._existing || []).map(f => f.fileId);
       }
       return o;
     }).filter(p => String(p.content || '').trim() || String(p.subject || '').trim() ||
-                   (includeFiles && (p.files || []).length));
+                   (includeFiles && ((p.files || []).length || (p.keptFiles || []).length)));
 
     return a;
   }).filter(a => String(a.univ || '').trim() || String(a.major || '').trim());
@@ -469,10 +590,17 @@ function updateProgress() {
 }
 
 function updateSubmitState() {
-  const ok = $('#chkPdpa').checked;
   const btn = $('#btnSubmit');
+  if (!btn) return;
+  if (EDIT_LOCKED) { btn.style.display = 'none'; return; }
+
+  const ok = $('#chkPdpa').checked;
   btn.disabled = !ok;
-  btn.textContent = ok ? '送出表單' : '請先勾選第 H 段的個資同意';
+  if (EDIT_MODE) {
+    btn.textContent = ok ? '儲存修改' : '請先勾選第 H 段的個資同意';
+  } else {
+    btn.textContent = ok ? '送出表單' : '請先勾選第 H 段的個資同意';
+  }
 }
 
 
@@ -526,48 +654,27 @@ function onSubmit() {
   }
 
   const n = totalFileCount();
-  showOverlay('資料傳送中…', n ? '含 ' + n + ' 張相片，可能需要 10～30 秒，請勿關閉頁面' : '請勿關閉頁面');
+  showOverlay(EDIT_MODE ? '儲存修改中…' : '資料傳送中…',
+    n ? '含 ' + n + ' 張新相片，可能需要 10～30 秒，請勿關閉頁面' : '請勿關閉頁面');
   $('#btnSubmit').disabled = true;
 
   callSubmit(payload, onSubmitDone, onSubmitFail);
 }
 
-/** 依執行模式送出資料 */
+/** 依模式決定要新增還是更新。demo 模式一律假裝成功 */
 function callSubmit(payload, onOk, onFail) {
-  const mode = runMode();
-
-  if (mode === 'gas') {
-    google.script.run.withSuccessHandler(onOk).withFailureHandler(onFail).submitForm(payload);
+  if (runMode() === 'demo') {
+    setTimeout(function () { onOk({ ok: true, submissionId: 'DEMO01', demo: true }); }, 900);
     return;
   }
 
-  if (mode === 'api') {
-    // text/plain 是關鍵：讓瀏覽器視為簡單請求，不送 preflight（Apps Script 不回應 OPTIONS）
-    fetch(String(window.GRAD_API_URL).trim(), {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    })
-      .then(function (r) { return r.text(); })
-      .then(function (txt) {
-        let res;
-        try {
-          res = JSON.parse(txt);
-        } catch (e) {
-          throw new Error('伺服器回傳的不是預期格式，通常代表 Apps Script 尚未正確部署，' +
-                          '或「誰可以存取」沒有設成「所有人」。');
-        }
-        onOk(res);
-      })
-      .catch(onFail);
-    return;
+  if (EDIT_MODE) {
+    const sess = getSession();
+    api('updateOwn', Object.assign({ token: sess ? sess.token : '' }, payload))
+      .then(onOk).catch(onFail);
+  } else {
+    api('submit', payload).then(onOk).catch(onFail);
   }
-
-  // demo：假裝送出，讓操作流程完整
-  setTimeout(function () {
-    onOk({ ok: true, submissionId: 'DEMO01', demo: true });
-  }, 900);
 }
 
 function onSubmitDone(res) {
@@ -596,6 +703,20 @@ function onSubmitFail(e) {
 
 function showSuccess(code, isDemo) {
   $('#overlay').classList.remove('show');
+
+  if (EDIT_MODE && !isDemo) {
+    document.querySelector('main').innerHTML =
+      '<section class="card"><div class="card-body" style="text-align:center;padding:36px 20px">' +
+      '<div class="result-icon">💾</div>' +
+      '<h2 style="margin:0 0 6px;font-size:20px">修改已儲存</h2>' +
+      '<p style="color:#6b7a8c;font-size:14px">你的資料已更新，狀態回到「待審」等待老師審核。</p>' +
+      '<div class="result-code">' + escapeHtml(code) + '</div>' +
+      '<p style="font-size:14px;color:#6b7a8c">還要再修改的話，直接重新整理這個頁面即可。</p>' +
+      '<button type="button" class="btn-ghost" onclick="location.reload()">回到修改畫面</button>' +
+      '</div></section>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
 
   const body = isDemo
     ? '<div class="result-icon">🧪</div>' +
@@ -644,7 +765,8 @@ function hasAnyInput() {
 }
 
 function markDirty() {
-  if (document.body.dataset.submitted === '1') return;
+  // 編輯模式改的是雲端既有資料，存草稿只會造成混淆
+  if (EDIT_MODE || document.body.dataset.submitted === '1') return;
   clearTimeout(draftTimer);
   draftTimer = setTimeout(saveDraft, 1200);
 }

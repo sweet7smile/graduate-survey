@@ -15,18 +15,46 @@ Google Apps Script + Google Sheet + Google Drive。
 
 ## 檔案
 
-| 檔案 | GAS 編輯器檔名 | 說明 |
+### 頁面
+
+| 頁面 | 對象 | 說明 |
 |---|---|---|
-| `gas/config.gs` | `config` | **含真實 ID，已列入 .gitignore，不會上傳** |
-| `gas/config.example.gs` | — | 公開範本（ID 與 Email 已抹除），自動產生 |
-| `gas/Code.gs` | `Code` | 後端：`doGet` 表單頁、`doPost` API、寫入、上傳、寄信 |
-| `gas/index.html` | `index` | 表單頁樣板 |
-| `gas/styles.html` | `styles` | CSS |
-| `gas/script.html` | `script` | 前端邏輯 |
-| `index.html` | — | **自動產生**的靜態版，GitHub Pages 服務的就是它，勿手改 |
-| `config.js` | — | Pages 用的 API 網址設定 |
-| `tools/build_pages.py` | — | 由 `gas/` 產生根目錄的靜態版 |
-| `SPEC.md` | — | 規格書 |
+| 填寫表單 | 畢業生 | 新填，或登入後修改自己的資料 |
+| 歷屆經驗查詢 | 所有人 | 依學校/科系/年度/分類查歷屆口試題、術科、心得 |
+| 登入 | 畢業生 / 教師 | 畢業生用「提交編號 + Email」；教師用帳密 |
+| 教師後台 | 教師 | 審核、檢視完整內容、匯出 CSV |
+
+### 檔案
+
+| 檔案 | GAS 編輯器檔名 | 類型 | 說明 |
+|---|---|---|---|
+| `gas/config.gs` | `config` | 指令碼 | **含真實 ID，已列入 .gitignore，不會上傳** |
+| `gas/config.example.gs` | — | — | 公開範本（ID 與 Email 已抹除），自動產生 |
+| `gas/Code.gs` | `Code` | 指令碼 | 進入點、路由、寫入、上傳、寄信、Sheet 版面 |
+| `gas/Auth.gs` | `Auth` | 指令碼 | 登入、session、密碼雜湊 |
+| `gas/Api.gs` | `Api` | 指令碼 | 讀取、更新、審核、匯出、公開瀏覽 |
+| `gas/index.html` | `index` | HTML | 表單頁（含修改模式） |
+| `gas/browse.html` | `browse` | HTML | 歷屆經驗查詢 |
+| `gas/login.html` | `login` | HTML | 登入頁 |
+| `gas/admin.html` | `admin` | HTML | 教師後台 |
+| `gas/styles.html` | `styles` | HTML | CSS |
+| `gas/common.html` | `common` | HTML | 導覽列、API client、session |
+| `gas/script.html` | `script` | HTML | 表單頁邏輯 |
+| `index/browse/login/admin.html` | — | — | **自動產生**的靜態版，Pages 服務的就是這些，勿手改 |
+| `config.js` | — | — | Pages 用的 API 網址設定 |
+| `tools/build_pages.py` | — | — | 由 `gas/` 產生根目錄的四個靜態頁 |
+| `SPEC.md` | — | — | 規格書 |
+
+### 權限模型
+
+- **畢業生**：用確認信裡的「提交編號 + 當初的 Email」登入。
+  兩者都對才放行 —— 編號只有 6 碼且會出現在信件中，單靠它太容易被冒用。
+- **教師**：帳號 + 密碼。密碼以「隨機鹽值 + SHA-256」存在 Script Properties，
+  **不在程式碼、不在版控、不在建置產物裡**。
+- **審核通過即鎖定**：教師按「通過」後，該筆資料轉為唯讀，畢業生只能檢視。
+  按「退回修改」會寄信給學生並解鎖，學生存檔後狀態自動回到「待審」。
+- **公開瀏覽**：只顯示「審核通過」且公開層級不是「僅供校內教師參考」的資料，
+  且一律不回傳 Email、手機、社群帳號與完整提交編號。選擇匿名者只顯示姓氏。
 
 > GAS 原始碼放在 `gas/`，建置後的靜態網頁放在根目錄。
 > 這樣 GitHub Pages 用**預設的 `/(root)`** 設定就會服務正確的檔案 ——
@@ -43,10 +71,28 @@ Google Apps Script + Google Sheet + Google Drive。
 ### 1. 建立專案
 
 1. <https://script.google.com> →「新增專案」，改名為「畢業生資料蒐集」
-2. 建立以下檔案並整段貼上內容：
-   - 指令碼 `Code`（先刪掉預設的 `myFunction`）
-   - 指令碼 `config`
-   - HTML `index`、`styles`、`script`（建立時不用打 `.html`）
+2. 建立以下檔案並整段貼上內容（每個都先 Ctrl+A 清空預設內容再貼）：
+   - 指令碼 `Code`（先刪掉預設的 `myFunction`）、`config`、`Auth`、`Api`
+   - HTML `index`、`browse`、`login`、`admin`、`styles`、`common`、`script`
+     （建立時不用打 `.html`）
+
+> HTML 檔名**必須完全一致**，程式靠 `include('styles')`、
+> `createTemplateFromFile('browse')` 這類名稱找檔案。
+> 指令碼檔名可以隨意，所有 `.gs` 共用同一個全域範圍。
+
+### 1.5 設定教師帳號（教師後台必要）
+
+1. 開啟 `Auth.gs`，找到 `setupTeacherAccount()`
+2. 把 `ACCOUNT` 與 `PASSWORD` 兩個常數換成你要用的帳號密碼（密碼至少 8 碼）
+3. 函式下拉選 `setupTeacherAccount` → 執行
+4. **執行成功後立刻把那兩行改回原本的提示文字並存檔**
+
+密碼會以隨機鹽值 + SHA-256 存進 Script Properties，程式裡不留明文，
+也不會進入 GitHub 或建置後的網頁。想改密碼就重跑一次。
+執行 `checkTeacherAccount()` 可以確認目前設定狀態（不會顯示密碼）。
+
+> ⚠️ 密碼一旦寫進 `config.gs` 或任何前端檔案就等於公開 ——
+> 本專案是 public repo，且建置腳本會把 `config.gs` 內嵌進公開網頁。
 
 ### 2. 初始化 Sheet
 

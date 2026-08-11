@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('styles'); ?>
+</head>
+<body>
+
+<header class="top">
+  <h1>教師後台</h1>
+  <p id="hdr-sub">審核 · 檢視 · 匯出</p>
+</header>
+
+<main class="wide">
+
+  <div id="msgBox" class="msg-box"></div>
+  <div class="stat-row" id="statRow"></div>
+
+  <section class="card">
+    <h2><span class="num">🔍</span>篩選與匯出</h2>
+    <div class="card-body">
+      <div class="filter-bar">
+        <div class="field" style="margin:0">
+          <label>審核狀態</label>
+          <select id="fStatus">
+            <option value="">全部</option>
+            <option value="待審">待審</option>
+            <option value="通過">通過</option>
+            <option value="退回修改">退回修改</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>畢業學年度</label>
+          <select id="fYear"><option value="">全部年度</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>關鍵字</label>
+          <input type="text" id="fKw" placeholder="姓名、學校、Email…">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
+        <select id="expSheet" style="width:auto;min-width:170px">
+          <option value="Main">Main（基本資料＋心得）</option>
+          <option value="Admissions">Admissions（推甄校系）</option>
+          <option value="Interview">Interview（口試題目）</option>
+          <option value="Practical">Practical（術科）</option>
+          <option value="Files">Files（相片清單）</option>
+        </select>
+        <label class="nav-user" style="color:var(--muted);display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="expApproved"> 只匯出已審核通過
+        </label>
+        <button type="button" class="btn-ghost" id="btnExport">⬇ 匯出 CSV</button>
+        <button type="button" class="btn-ghost" id="btnReload">↻ 重新整理</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>編號</th><th>學年度</th><th>姓名</th><th>班級</th>
+          <th>最終落點</th><th>公開層級</th>
+          <th>校系</th><th>口試</th><th>術科</th><th>相片</th>
+          <th>狀態</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="12" class="empty">載入中…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer class="bottom">
+  國立霧峰高級農工職業學校　電子科　畢業生升學資料蒐集系統
+</footer>
+
+<!-- 詳細內容 -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 style="margin:0;font-size:18px" id="mTitle">詳細資料</h3>
+      <button type="button" class="btn-ghost" onclick="closeModal()">關閉</button>
+    </div>
+    <div id="mBody"></div>
+    <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:14px">
+      <div class="field">
+        <label>審核意見<span class="sub">退回修改時會一併寄給學生</span></label>
+        <textarea id="mNote" rows="3" placeholder="例：口試題目部分請補充第二個志願的內容"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn-sm ok" onclick="doReview('通過')">✅ 審核通過（之後學生無法修改）</button>
+        <button type="button" class="btn-sm warn" onclick="doReview('退回修改')">↩ 退回修改（寄信通知）</button>
+        <button type="button" class="btn-sm" onclick="doReview('待審')">↺ 改回待審</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <div style="font-weight:700" id="ovText">載入中…</div>
+  </div>
+</div>
+
+<script>
+  const CFG = <?!= JSON.stringify(getClientConfig()) ?>;
+  const GAS_BASE_URL = '<?!= getWebAppUrl() ?>';
+</script>
+<?!= include('common'); ?>
+<script>
+let LIST = [];
+let CURRENT = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderNav('admin');
+
+  const s = getSession();
+  if (!s || s.role !== 'teacher') {
+    location.href = pageUrl('login') + '?role=teacher';
+    return;
+  }
+  document.getElementById('hdr-sub').textContent = '審核 · 檢視 · 匯出　|　' + (s.label || '');
+
+  ['fStatus', 'fYear'].forEach(function (id) {
+    document.getElementById(id).onchange = renderTable;
+  });
+  let t = null;
+  document.getElementById('fKw').oninput = function () {
+    clearTimeout(t); t = setTimeout(renderTable, 200);
+  };
+  document.getElementById('btnReload').onclick = load;
+  document.getElementById('btnExport').onclick = doExport;
+
+  load();
+});
+
+function busy(on, text) {
+  document.getElementById('ovText').textContent = text || '載入中…';
+  document.getElementById('overlay').classList.toggle('show', !!on);
+}
+
+function token() { const s = getSession(); return s ? s.token : ''; }
+
+/** session 逾時就導回登入頁 */
+function handleAuthFail(res) {
+  if (res && !res.ok && /登入已逾時|權限不足/.test(res.message || '')) {
+    clearSession();
+    location.href = pageUrl('login') + '?role=teacher';
+    return true;
+  }
+  return false;
+}
+
+function load() {
+  busy(true);
+  api('adminList', { token: token() })
+    .then(function (res) {
+      busy(false);
+      if (handleAuthFail(res)) return;
+      if (!res.ok) { showBanner('#msgBox', res.message || '載入失敗。'); return; }
+      LIST = res.list;
+      document.getElementById('msgBox').className = 'msg-box';
+      renderStat(res.stat);
+      buildYearFilter();
+      renderTable();
+    })
+    .catch(function (e) {
+      busy(false);
+      showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
+    });
+}
+
+function renderStat(st) {
+  document.getElementById('statRow').innerHTML =
+    '<div class="stat-chip"><b>' + st.total + '</b>總筆數</div>' +
+    '<div class="stat-chip"><b>' + st.pending + '</b>待審</div>' +
+    '<div class="stat-chip"><b>' + st.approved + '</b>已通過</div>' +
+    '<div class="stat-chip"><b>' + st.returned + '</b>已退回</div>';
+}
+
+function buildYearFilter() {
+  const years = Array.from(new Set(LIST.map(function (x) { return x.gradYear; })))
+    .filter(Boolean).sort().reverse();
+  const el = document.getElementById('fYear');
+  const keep = el.value;
+  el.innerHTML = '<option value="">全部年度</option>';
+  years.forEach(function (y) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y + ' 學年度';
+    el.appendChild(o);
+  });
+  el.value = keep;
+}
+
+function statusTag(st) {
+  const cls = st === '通過' ? 'ok' : (st === '退回修改' ? 'err' : 'warn');
+  return '<span class="tag ' + cls + '">' + escapeHtml(st) + '</span>';
+}
+
+function renderTable() {
+  const fs = document.getElementById('fStatus').value;
+  const fy = document.getElementById('fYear').value;
+  const kw = document.getElementById('fKw').value.trim().toLowerCase();
+
+  const rows = LIST.filter(function (x) {
+    if (fs && x.reviewStatus !== fs) return false;
+    if (fy && x.gradYear !== fy) return false;
+    if (kw) {
+      const hay = [x.name, x.email, x.currentPlace, x.className, x.code].join(' ').toLowerCase();
+      if (hay.indexOf(kw) < 0) return false;
+    }
+    return true;
+  });
+
+  const tb = document.getElementById('tbody');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="12" class="empty">沒有符合條件的資料</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = rows.map(function (x) {
+    const anon = x.publishLevel.indexOf('匿名') === 0 ? 'gray'
+               : (x.publishLevel.indexOf('僅供校內') === 0 ? 'err' : 'ok');
+    const shortLevel = x.publishLevel.indexOf('完全公開') === 0 ? '公開'
+                     : (x.publishLevel.indexOf('匿名') === 0 ? '匿名' : '不公開');
+    return '<tr>' +
+      '<td><code>' + escapeHtml(x.code) + '</code></td>' +
+      '<td class="num">' + escapeHtml(x.gradYear) + '</td>' +
+      '<td><strong>' + escapeHtml(x.name) + '</strong></td>' +
+      '<td>' + escapeHtml(x.className) + '</td>' +
+      '<td>' + escapeHtml(x.currentPlace) + '</td>' +
+      '<td><span class="tag ' + anon + '">' + shortLevel + '</span></td>' +
+      '<td class="num">' + x.counts.adm + '</td>' +
+      '<td class="num">' + x.counts.itv + '</td>' +
+      '<td class="num">' + x.counts.prc + '</td>' +
+      '<td class="num">' + x.counts.file + '</td>' +
+      '<td>' + statusTag(x.reviewStatus) +
+        (x.reviewNote ? '<div style="font-size:11px;color:var(--muted);margin-top:3px">' +
+          escapeHtml(x.reviewNote.slice(0, 30)) + '</div>' : '') + '</td>' +
+      '<td><button type="button" class="btn-sm" onclick="openDetail(\'' +
+        escapeHtml(x.submissionId) + '\')">檢視／審核</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+
+/* ── 詳細內容 ─────────────────────────── */
+
+function openDetail(submissionId) {
+  busy(true, '載入詳細資料…');
+  api('adminDetail', { token: token(), submissionId: submissionId })
+    .then(function (res) {
+      busy(false);
+      if (handleAuthFail(res)) return;
+      if (!res.ok) { alert(res.message || '載入失敗'); return; }
+      CURRENT = LIST.filter(function (x) { return x.submissionId === submissionId; })[0];
+      renderDetail(res.record);
+      document.getElementById('mNote').value = CURRENT ? CURRENT.reviewNote : '';
+      document.getElementById('modal').classList.add('show');
+    })
+    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  CURRENT = null;
+}
+
+function kv(pairs) {
+  return '<dl class="kv">' + pairs.filter(function (p) {
+    return String(p[1] || '').trim() !== '';
+  }).map(function (p) {
+    return '<dt>' + escapeHtml(p[0]) + '</dt><dd>' + escapeHtml(p[1]) + '</dd>';
+  }).join('') + '</dl>';
+}
+
+function renderDetail(rec) {
+  const m = rec.main;
+  document.getElementById('mTitle').textContent =
+    m.name + '（' + m.grad_year + ' 學年度 · 編號 ' +
+    String(m.submission_id).substring(0, 6).toUpperCase() + '）';
+
+  let html = '';
+
+  html += '<div class="detail-sec"><h4>基本資料</h4>' + kv([
+    ['班級座號', (m.class_name || '') + ' ' + (m.seat_no || '')],
+    ['Email', m.email], ['手機', m.phone], ['IG/Line', m.social_id],
+    ['最終落點', m.current_place], ['主要出路', m.main_path],
+    ['報考群類', m.exam_group],
+    ['統測總分', m.tve_total], ['班排', m.rank_pct],
+    ['證照', (m.certificates || []).join('、')],
+    ['競賽/專題', m.experiences], ['幹部社團', m.activities],
+    ['公開層級', m.publish_level],
+    ['願意回校分享', m.willing_share ? '是' : ''],
+    ['接受提問', m.willing_qa ? '是' : '']
+  ]) + '</div>';
+
+  (rec.admissions || []).forEach(function (a, i) {
+    html += '<div class="detail-sec"><h4>志願 ' + (i + 1) + '：' +
+      escapeHtml(a.univ + ' ' + a.major) + (a.is_enrolled ? '　★最終就讀' : '') + '</h4>' +
+      kv([
+        ['招生管道', a.channel], ['一階', a.stage1_result],
+        ['二階項目', (a.stage2_items || []).join('、')],
+        ['二階成績', a.stage2_score],
+        ['結果', String(a.final_result || '') + String(a.result_rank || '')],
+        ['面試形式', a.itv_format], ['教授人數', a.itv_prof_count],
+        ['時間', a.itv_duration_min], ['流程', a.itv_flow]
+      ]);
+
+    if ((a.interviews || []).length) {
+      html += '<div style="margin-top:8px"><b style="font-size:13px">口試題目 ' +
+        a.interviews.length + ' 題</b>';
+      a.interviews.forEach(function (q, qi) {
+        html += '<div class="q-card" style="margin:6px 0">' +
+          '<div class="q-meta">' + (q.categories || []).map(function (c) {
+            return '<span class="tag warn">' + escapeHtml(c) + '</span>';
+          }).join('') + (q.difficulty ? '<span>難度 ' + escapeHtml(q.difficulty) + '</span>' : '') + '</div>' +
+          '<div class="q-text">' + (qi + 1) + '. ' + escapeHtml(q.question) + '</div>' +
+          (q.my_answer ? '<div class="q-extra"><b>當時回答：</b>' + escapeHtml(q.my_answer) + '</div>' : '') +
+          (q.better_answer ? '<div class="q-extra"><b>回頭看：</b>' + escapeHtml(q.better_answer) + '</div>' : '') +
+          (q.tip ? '<div class="q-extra"><b>提醒：</b>' + escapeHtml(q.tip) + '</div>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    (a.practicals || []).forEach(function (p) {
+      html += '<div class="q-card" style="margin:6px 0">' +
+        '<div class="q-meta"><span class="tag">' + escapeHtml(p.subject || '術科') + '</span>' +
+        (p.duration_min ? '<span>' + escapeHtml(p.duration_min) + ' 分</span>' : '') + '</div>' +
+        '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
+        (p.equipment ? '<div class="q-extra"><b>設備：</b>' + escapeHtml(p.equipment) + '</div>' : '') +
+        (p.prep_advice ? '<div class="q-extra"><b>建議：</b>' + escapeHtml(p.prep_advice) + '</div>' : '') +
+        ((p.existingFiles || []).length ? '<div class="q-extra"><b>相片：</b>' +
+          p.existingFiles.map(function (f) {
+            return '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener">' +
+                   escapeHtml(f.name) + '</a>';
+          }).join('　') + '</div>' : '') +
+      '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  html += '<div class="detail-sec"><h4>備審與心得</h4>' + kv([
+    ['備審頁數', m.portfolio_pages], ['製作工具', m.portfolio_tool],
+    ['花費時數', m.portfolio_hours], ['備審重點', m.portfolio_focus],
+    ['面試問到備審', m.portfolio_asked],
+    ['整體心得', m.reflection],
+    ['建議1', m.advice_1], ['建議2', m.advice_2], ['建議3', m.advice_3],
+    ['高一高二', m.do_earlier], ['最後悔', m.regret]
+  ]) + '</div>';
+
+  document.getElementById('mBody').innerHTML = html;
+}
+
+function doReview(status) {
+  if (!CURRENT) return;
+  const note = document.getElementById('mNote').value.trim();
+
+  if (status === '退回修改' && !note) {
+    alert('退回修改請填寫審核意見，學生才知道要改什麼（這段文字會寄給他）。');
+    return;
+  }
+  if (status === '通過' &&
+      !confirm('審核通過後，這位畢業生就無法再自行修改資料了。確定要通過嗎？')) {
+    return;
+  }
+
+  busy(true, '儲存審核結果…');
+  api('adminReview', {
+    token: token(), submissionId: CURRENT.submissionId, status: status, note: note
+  })
+    .then(function (res) {
+      busy(false);
+      if (handleAuthFail(res)) return;
+      if (!res.ok) { alert(res.message || '審核失敗'); return; }
+      closeModal();
+      showBanner('#msgBox', res.message, 'ok');
+      load();
+    })
+    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
+}
+
+
+/* ── 匯出 ─────────────────────────────── */
+
+function doExport() {
+  const sheet = document.getElementById('expSheet').value;
+  const onlyApproved = document.getElementById('expApproved').checked;
+
+  busy(true, '產生 CSV…');
+  api('adminExport', { token: token(), sheet: sheet, onlyApproved: onlyApproved })
+    .then(function (res) {
+      busy(false);
+      if (handleAuthFail(res)) return;
+      if (!res.ok) { alert(res.message || '匯出失敗'); return; }
+
+      const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+
+      showBanner('#msgBox', '已匯出 ' + res.rowCount + ' 筆到 ' + res.filename, 'ok');
+    })
+    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+:root {
+  --brand: #1a3a5c;
+  --brand-light: #2c5f8a;
+  --accent: #f0a202;
+  --bg: #f2f5f8;
+  --card: #ffffff;
+  --text: #1c2733;
+  --muted: #6b7a8c;
+  --line: #dde4ec;
+  --danger: #c0392b;
+  --ok: #1e8449;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── 導覽列 ───────────────────────────── */
+nav.topnav {
+  background: #10263e;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.nav-inner {
+  max-width: 1100px; margin: 0 auto;
+  padding: 8px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+.nav-link {
+  color: #cfe0f0; text-decoration: none;
+  padding: 8px 13px; border-radius: 8px;
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.nav-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+.nav-link.active { background: var(--brand-light); color: #fff; }
+
+.nav-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nav-user { color: #9fc0dd; font-size: 13px; white-space: nowrap; }
+.nav-btn {
+  display: inline-block; text-decoration: none;
+  padding: 7px 13px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.28);
+  background: transparent; color: #dce9f5; font-family: inherit;
+}
+.nav-btn:hover { background: rgba(255,255,255,.12); }
+.nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #3a2800; }
+.nav-btn.primary:hover { filter: brightness(1.08); }
+
+@media (max-width: 560px) {
+  .nav-inner { padding: 7px 10px; }
+  .nav-link, .nav-btn { padding: 6px 10px; font-size: 13px; }
+  .nav-user { width: 100%; }
+}
+
+/* ── 頁首 ─────────────────────────────── */
+header.top {
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+  color: #fff;
+  padding: 22px 18px 18px;
+}
+header.top h1 { margin: 0 0 6px; font-size: 21px; letter-spacing: .5px; }
+header.top p  { margin: 0; font-size: 14px; opacity: .9; }
+
+.progress-wrap {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 18px;
+}
+.progress-bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--brand-light), var(--accent));
+  transition: width .3s ease;
+}
+.progress-text { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── 版面 ─────────────────────────────── */
+main { max-width: 860px; margin: 0 auto; padding: 16px 14px 120px; }
+
+section.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+section.card > h2 {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 17px;
+  background: #f7f9fb;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 9px;
+}
+section.card > h2 .num {
+  background: var(--brand); color: #fff;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; flex: 0 0 auto;
+}
+.card-body { padding: 16px; }
+
+.hint {
+  font-size: 13px; color: var(--muted);
+  background: #f7f9fb; border-left: 3px solid var(--brand-light);
+  padding: 9px 12px; border-radius: 0 8px 8px 0; margin: 0 0 14px;
+}
+.hint.warn { border-left-color: var(--accent); background: #fff8e8; color: #7a5600; }
+
+/* ── 欄位 ─────────────────────────────── */
+.field { margin-bottom: 14px; }
+.field > label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+.field .sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.req::after { content: " *"; color: var(--danger); }
+
+input[type=text], input[type=email], input[type=tel], input[type=number],
+select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 16px;           /* 16px 以下 iOS 會自動放大畫面 */
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brand-light);
+  box-shadow: 0 0 0 3px rgba(44,95,138,.15);
+}
+textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
+input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); background: #fff5f4; }
+
+.readonly-box {
+  padding: 10px 12px; background: #eef2f6; border-radius: 9px;
+  color: var(--muted); font-size: 15px;
+}
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 620px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .grid3.keep { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── 勾選 / 單選 ──────────────────────── */
+.chk-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chk-group label {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 99px;
+  background: #fff; font-size: 14px; cursor: pointer; user-select: none;
+}
+.chk-group label:has(input:checked) {
+  border-color: var(--brand-light); background: #e8f0f7; font-weight: 600;
+}
+.chk-group input { width: 16px; height: 16px; accent-color: var(--brand); margin: 0; }
+
+.radio-col label {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px;
+  margin-bottom: 7px; background: #fff; cursor: pointer; font-size: 15px;
+}
+.radio-col label:has(input:checked) { border-color: var(--brand-light); background: #e8f0f7; }
+.radio-col input { accent-color: var(--brand); margin-top: 3px; }
+
+/* ── 摺疊區 ───────────────────────────── */
+details.fold {
+  border: 1px solid var(--line); border-radius: 9px;
+  margin-bottom: 14px; background: #fbfcfd;
+}
+details.fold > summary {
+  padding: 11px 14px; cursor: pointer; font-weight: 600; font-size: 14px;
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+}
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "▾"; color: var(--muted); }
+details.fold[open] > summary::after { content: "▴"; }
+details.fold > div { padding: 0 14px 14px; }
+
+/* ── 動態卡片 ─────────────────────────── */
+.dyn-card {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  margin-bottom: 14px; background: #fbfcfd; overflow: hidden;
+}
+.dyn-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 13px; background: #eef3f8; border-bottom: 1px solid var(--line);
+}
+.dyn-title { font-weight: 700; font-size: 15px; color: var(--brand); }
+.dyn-body { padding: 13px; }
+
+.sub-card {
+  border: 1px dashed #c3cfdc; border-radius: 10px;
+  padding: 12px; margin-bottom: 10px; background: #fff;
+}
+.sub-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 9px; font-weight: 600; font-size: 14px; color: var(--brand-light);
+}
+
+.sub-section-title {
+  font-size: 14px; font-weight: 700; color: var(--brand);
+  margin: 16px 0 8px; padding-top: 12px; border-top: 2px solid var(--line);
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ── 按鈕 ─────────────────────────────── */
+button { font-family: inherit; cursor: pointer; }
+
+.btn-add {
+  width: 100%; padding: 11px; font-size: 15px; font-weight: 600;
+  border: 1.5px dashed var(--brand-light); border-radius: 10px;
+  background: #fff; color: var(--brand-light);
+}
+.btn-add:hover { background: #eef3f8; }
+.btn-add:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-add.small { padding: 8px; font-size: 14px; }
+
+.btn-del {
+  border: none; background: transparent; color: var(--danger);
+  font-size: 13px; padding: 4px 8px; border-radius: 6px;
+}
+.btn-del:hover { background: #fdecea; }
+
+.btn-submit {
+  width: 100%; padding: 16px; font-size: 18px; font-weight: 700;
+  border: none; border-radius: 12px; color: #fff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+  box-shadow: 0 4px 14px rgba(26,58,92,.28);
+}
+.btn-submit:disabled {
+  background: #b9c4d0; box-shadow: none; cursor: not-allowed;
+}
+
+.btn-ghost {
+  padding: 10px 14px; font-size: 14px; border-radius: 9px;
+  border: 1px solid var(--line); background: #fff; color: var(--muted);
+}
+
+/* ── 相片 ─────────────────────────────── */
+.file-drop {
+  border: 1.5px dashed #c3cfdc; border-radius: 10px;
+  padding: 14px; text-align: center; background: #fafbfc;
+  font-size: 14px; color: var(--muted);
+}
+.file-drop input[type=file] { display: none; }
+.file-drop .pick {
+  display: inline-block; margin-top: 6px; padding: 8px 16px;
+  background: var(--brand-light); color: #fff; border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+}
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.thumb { position: relative; width: 84px; }
+.thumb img { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.thumb .x {
+  position: absolute; top: -6px; right: -6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--danger); color: #fff; border: none;
+  font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.thumb .sz { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+
+/* ── 送出區 ───────────────────────────── */
+.submit-area { padding: 4px 2px 0; }
+.draft-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--muted);
+}
+
+/* ── 遮罩 / 結果頁 ────────────────────── */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(20,30,42,.78);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.show { display: flex; }
+.overlay-box {
+  background: #fff; border-radius: 14px; padding: 26px 22px;
+  max-width: 420px; width: 100%; text-align: center;
+}
+.spinner {
+  width: 42px; height: 42px; margin: 0 auto 14px;
+  border: 4px solid var(--line); border-top-color: var(--brand-light);
+  border-radius: 50%; animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-icon { font-size: 46px; line-height: 1; margin-bottom: 10px; }
+.result-code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 26px; font-weight: 700; letter-spacing: 3px; color: var(--brand);
+  background: #eef3f8; padding: 10px; border-radius: 9px; margin: 12px 0;
+}
+
+.msg-box {
+  padding: 12px 14px; border-radius: 9px; margin-bottom: 14px;
+  font-size: 14px; display: none; white-space: pre-wrap;
+}
+.msg-box.err { display: block; background: #fdecea; color: var(--danger); border: 1px solid #f5c6c2; }
+.msg-box.ok  { display: block; background: #eafaf1; color: var(--ok); border: 1px solid #b7e4c9; }
+
+footer.bottom {
+  text-align: center; font-size: 12px; color: var(--muted);
+  padding: 20px 14px 30px;
+}
+
+/* ═══ 登入頁 ═══════════════════════════ */
+.login-wrap { max-width: 440px; margin: 40px auto; padding: 0 14px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab {
+  flex: 1; padding: 11px; text-align: center; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  font-size: 15px; font-weight: 600; color: var(--muted); font-family: inherit;
+}
+.tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* ═══ 查詢頁 ═══════════════════════════ */
+.filter-bar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+.stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.stat-chip {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 14px; font-size: 13px; color: var(--muted);
+}
+.stat-chip b { color: var(--brand); font-size: 19px; margin-right: 4px; }
+
+.q-card {
+  background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--brand-light);
+  border-radius: 10px; padding: 13px 15px; margin-bottom: 10px;
+}
+.q-card .q-meta {
+  font-size: 12px; color: var(--muted); margin-bottom: 6px;
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+.q-card .q-text { font-size: 15px; font-weight: 600; line-height: 1.6; }
+.q-card .q-extra {
+  margin-top: 8px; font-size: 13px; color: #4a5a6a;
+  background: #f7f9fb; padding: 8px 11px; border-radius: 7px; white-space: pre-wrap;
+}
+.tag {
+  display: inline-block; background: #e8f0f7; color: var(--brand);
+  padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.tag.gray { background: #eef1f4; color: var(--muted); }
+.tag.ok { background: #eafaf1; color: var(--ok); }
+.tag.warn { background: #fff8e8; color: #7a5600; }
+.tag.err { background: #fdecea; color: var(--danger); }
+
+.empty {
+  text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px;
+}
+
+/* ═══ 教師後台 ═════════════════════════ */
+.wide { max-width: 1100px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+table.data { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 860px; }
+table.data th, table.data td {
+  padding: 9px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top;
+}
+table.data th {
+  background: #f2f6fa; font-size: 13px; color: var(--brand);
+  position: sticky; top: 0; white-space: nowrap;
+}
+table.data tr:hover td { background: #fafcfe; }
+table.data td.num { text-align: center; color: var(--muted); }
+
+.btn-sm {
+  padding: 5px 11px; font-size: 13px; border-radius: 7px;
+  border: 1px solid var(--line); background: #fff; font-family: inherit;
+  white-space: nowrap;
+}
+.btn-sm:hover { background: #eef3f8; }
+.btn-sm.ok { border-color: var(--ok); color: var(--ok); }
+.btn-sm.ok:hover { background: #eafaf1; }
+.btn-sm.warn { border-color: var(--accent); color: #7a5600; }
+.btn-sm.warn:hover { background: #fff8e8; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 300; background: rgba(20,30,42,.75);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 24px 14px; overflow-y: auto;
+}
+.modal.show { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 14px; max-width: 780px; width: 100%;
+  padding: 22px; margin: auto 0;
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+}
+.detail-sec { margin-bottom: 16px; }
+.detail-sec h4 {
+  margin: 0 0 7px; font-size: 14px; color: var(--brand);
+  padding-bottom: 5px; border-bottom: 2px solid var(--line);
+}
+.kv { display: grid; grid-template-columns: 130px 1fr; gap: 5px 12px; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; white-space: pre-wrap; word-break: break-word; }
+</style>
+
+</head>
+<body>
+
+<header class="top">
+  <h1>歷屆升學經驗查詢</h1>
+  <p id="hdr-sub">國立霧峰高級農工職業學校　電子科</p>
+</header>
+
+<main class="wide">
+
+  <p class="hint">
+    這裡是歷屆學長姐留下的真實經驗。<strong>只會顯示經老師審核通過、且本人同意公開的資料</strong>，
+    不會出現任何聯絡方式。選擇匿名的學長姐只顯示姓氏。
+  </p>
+
+  <div id="msgBox" class="msg-box"></div>
+
+  <div class="stat-row" id="statRow"></div>
+
+  <section class="card">
+    <h2><span class="num">🔍</span>篩選條件</h2>
+    <div class="card-body">
+      <div class="filter-bar">
+        <div class="field" style="margin:0">
+          <label>學校</label>
+          <select id="fUniv"><option value="">全部學校</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>科系</label>
+          <select id="fMajor"><option value="">全部科系</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>畢業學年度</label>
+          <select id="fYear"><option value="">全部年度</option></select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>題目分類</label>
+          <select id="fCat"><option value="">全部分類</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin:0">
+        <label>關鍵字</label>
+        <input type="text" id="fKw" placeholder="搜尋題目、心得、術科內容…">
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs" style="margin-bottom:14px">
+    <button type="button" class="tab active" data-view="questions">❓ 口試題目</button>
+    <button type="button" class="tab" data-view="practicals">🔧 術科</button>
+    <button type="button" class="tab" data-view="people">🎓 學長姐心得</button>
+  </div>
+
+  <div id="result"></div>
+
+</main>
+
+<footer class="bottom">
+  國立霧峰高級農工職業學校　電子科　畢業生升學資料蒐集系統
+</footer>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <div style="font-weight:700">載入中…</div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+/* ── 以下由 config.gs 自動內嵌（ID 與 Email 已移除），請勿手動修改，改 config.gs 後重跑 tools/build_pages.py ── */
+/**
+ * 霧峰農工電子科 畢業生升學資料蒐集系統
+ * config.gs — 常數、選項清單、資料表結構
+ *
+ * 改設定只需要動這個檔案。
+ */
+
+const CONFIG = {
+  // ── 儲存位置 ────────────────────────────────────────────
+  SHEET_ID: 'YOUR_SHEET_ID',
+  DRIVE_FOLDER_ID: 'YOUR_DRIVE_FOLDER_ID',
+
+  // ── 學校固定資訊 ────────────────────────────────────────
+  SCHOOL: '國立霧峰高級農工職業學校',
+  DEPT: '電子科',
+
+  // ── 通知信 ──────────────────────────────────────────────
+  NOTIFY_EMAIL: 'your-address@example.com',  // 承辦教師，收提交通知
+  SEND_CONFIRM_MAIL: true,                      // 是否寄確認信給學生
+  CONTACT_NAME: '霧峰農工電子科',
+
+  // ── 上傳限制 ────────────────────────────────────────────
+  MAX_FILES_PER_PRACTICAL: 5,
+  MAX_FILES_TOTAL: 15,
+  MAX_TOTAL_BYTES: 4 * 1024 * 1024,   // 單次提交所有圖片合計上限（base64 前）
+  IMAGE_MAX_EDGE: 1600,               // 前端壓縮：長邊像素上限
+  IMAGE_QUALITY: 0.8,                 // 前端壓縮：JPEG 品質
+
+  // ── 表單限制 ────────────────────────────────────────────
+  MAX_ADMISSIONS: 6,                  // 推甄校系筆數上限
+
+  // ── 行為 ────────────────────────────────────────────────
+  BLOCK_DUPLICATE: true,              // 同 Email + 同學年度 是否阻擋重複提交
+  LOCK_TIMEOUT_MS: 30000,
+
+  // ── 登入與審核 ──────────────────────────────────────────
+  // ⚠️ 教師帳密不放這裡也不放任何前端檔案。
+  //    本專案是公開 repo，且 build_pages.py 會把 config.gs 內嵌進公開網頁。
+  //    帳密以「鹽值 + SHA-256 雜湊」存在 Script Properties，
+  //    請執行一次 setupTeacherAccount() 設定（見 Code.gs）。
+  SESSION_HOURS: 6,                   // 登入有效時數（CacheService 上限 6 小時）
+  LOCK_AFTER_APPROVED: true,          // 審核「通過」後畢業生不能再修改
+  BROWSE_REQUIRE_APPROVED: true,      // 瀏覽頁只顯示審核通過的資料
+
+  // ── Sheet 分頁名稱 ──────────────────────────────────────
+  SHEETS: {
+    MAIN: 'Main',
+    ADMISSIONS: 'Admissions',
+    INTERVIEW: 'Interview',
+    PRACTICAL: 'Practical',
+    FILES: 'Files',
+    CONFIG: 'Config',
+    LOG: 'Log'
+  }
+};
+
+
+/** 下拉／複選選項清單 */
+const OPTIONS = {
+  MAIN_PATHS: [
+    '四技二專甄選入學', '科技校院繁星計畫', '技優甄審', '技優保送',
+    '特殊選才', '四技二專登記分發', '大學申請入學（學測）',
+    '就業', '服役', '其他'
+  ],
+
+  CHANNELS: [
+    '四技二專甄選入學', '科技校院繁星計畫', '技優甄審', '技優保送',
+    '特殊選才', '四技二專登記分發', '大學申請入學（學測）', '其他'
+  ],
+
+  EXAM_GROUPS: [
+    '電機與電子群電子類', '電機與電子群電機類', '機械群',
+    '設計群', '商業與管理群', '其他', '未報考統測'
+  ],
+
+  CERTIFICATES: [
+    '丙級電腦硬體裝修', '丙級工業電子', '乙級工業電子',
+    '丙級數位電子', '乙級數位電子', '丙級儀表電子',
+    '丙級室內配線', '乙級機電整合', '雲端物聯網應用',
+    'TQC 系列', 'ITE 資訊專業人員', '其他'
+  ],
+
+  STAGE1_RESULTS: ['通過', '未通過', '不適用（無一階篩選）'],
+
+  STAGE2_ITEMS: [
+    '書面審查', '個人面試', '團體面試', '筆試',
+    '術科實作', '實作測驗', '作品集'
+  ],
+
+  FINAL_RESULTS: ['正取', '備取', '未錄取', '未參加二階'],
+
+  INTERVIEW_FORMATS: ['個人面試', '團體面試', '線上面試', '未面試'],
+
+  QUESTION_CATEGORIES: [
+    '自我介紹', '專業知識', '專題內容', '備審內容', '生涯規劃',
+    '時事', '英文', '情境題', '臨場反應', '其他'
+  ],
+
+  PRACTICAL_SUBJECTS: [
+    '電子電路實作', '程式設計', '數學筆試', '專業科目筆試',
+    '專題口說', '電腦繪圖', '英文測驗', '其他'
+  ],
+
+  PORTFOLIO_ASKED: ['有，被問很多', '有，稍微問到', '沒有', '不記得'],
+
+  PUBLISH_LEVELS: [
+    '完全公開（顯示姓名）',
+    '匿名公開（僅顯示「電子科 OO 級 X 同學」）',
+    '僅供校內教師參考，不公開'
+  ],
+
+  FILE_CATEGORIES: ['術科題目', '作品照', '備審目錄', '其他'],
+
+  REVIEW_STATUSES: ['待審', '通過', '退回修改']
+};
+
+
+/**
+ * 資料表結構。key = 程式用欄位名，label = Sheet 表頭中文。
+ * 寫入時依此順序組列，改順序只要動這裡。
+ */
+const SCHEMA = {
+  // 欄位順序＝Sheet 欄位順序。姓名刻意排在前面，
+  // 搭配凍結前 4 欄，橫向捲動時仍看得到這是誰的資料。
+  MAIN: [
+    { key: 'submission_id',    label: '提交編號' },
+    { key: 'submitted_at',     label: '提交時間' },
+    { key: 'grad_year',        label: '畢業學年度' },
+    { key: 'name',             label: '姓名' },
+    { key: 'class_name',       label: '班級' },
+    { key: 'seat_no',          label: '座號' },
+    { key: 'email',            label: '聯絡Email' },
+    { key: 'phone',            label: '手機' },
+    { key: 'social_id',        label: 'IG/Line' },
+    { key: 'current_place',    label: '目前就讀學校或服務單位' },
+    { key: 'school',           label: '畢業學校' },
+    { key: 'dept',             label: '科別' },
+    { key: 'main_path',        label: '主要出路' },
+    { key: 'exam_group',       label: '報考群類' },
+    { key: 'tve_ch',           label: '統測-國文' },
+    { key: 'tve_en',           label: '統測-英文' },
+    { key: 'tve_math',         label: '統測-數學' },
+    { key: 'tve_prof1',        label: '統測-專業一' },
+    { key: 'tve_prof2',        label: '統測-專業二' },
+    { key: 'tve_total',        label: '統測-總分' },
+    { key: 'rank_pct',         label: '在校成績班排百分比' },
+    { key: 'certificates',     label: '持有證照' },
+    { key: 'experiences',      label: '競賽/專題經歷' },
+    { key: 'activities',       label: '幹部/社團/志工' },
+    { key: 'portfolio_pages',  label: '備審頁數' },
+    { key: 'portfolio_tool',   label: '備審製作工具' },
+    { key: 'portfolio_hours',  label: '備審花費時數' },
+    { key: 'portfolio_focus',  label: '備審重點' },
+    { key: 'portfolio_asked',  label: '面試是否問到備審' },
+    { key: 'reflection',       label: '整體心得' },
+    { key: 'advice_1',         label: '建議1' },
+    { key: 'advice_2',         label: '建議2' },
+    { key: 'advice_3',         label: '建議3' },
+    { key: 'do_earlier',       label: '高一高二該先做什麼' },
+    { key: 'regret',           label: '最後悔沒做的事' },
+    { key: 'willing_share',    label: '願意回校分享' },
+    { key: 'willing_qa',       label: '接受學弟妹提問' },
+    { key: 'consent_pdpa',     label: '個資同意' },
+    { key: 'publish_level',    label: '公開層級' },
+    { key: 'consent_photo',    label: '相片授權' },
+    { key: 'review_status',    label: '審核狀態' },
+    { key: 'review_note',      label: '審核意見' },
+    { key: 'reviewed_at',      label: '審核時間' },
+    { key: 'updated_at',       label: '最後修改時間' }
+  ],
+
+  ADMISSIONS: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'idx',            label: '志願序' },
+    { key: 'univ',           label: '學校名稱' },
+    { key: 'major',          label: '科系名稱' },
+    { key: 'channel',        label: '招生管道' },
+    { key: 'stage1_result',  label: '一階篩選' },
+    { key: 'stage2_items',   label: '二階項目' },
+    { key: 'stage2_score',   label: '二階成績' },
+    { key: 'final_result',   label: '最終結果' },
+    { key: 'result_rank',    label: '名次' },
+    { key: 'is_enrolled',    label: '最終就讀' }
+  ],
+
+  INTERVIEW: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'admission_idx',  label: '志願序' },
+    { key: 'univ',           label: '學校名稱' },
+    { key: 'major',          label: '科系名稱' },
+    { key: 'format',         label: '面試形式' },
+    { key: 'prof_count',     label: '教授人數' },
+    { key: 'duration_min',   label: '時間長度(分)' },
+    { key: 'flow',           label: '面試流程' },
+    { key: 'q_no',           label: '題號' },
+    { key: 'question',       label: '題目' },
+    { key: 'categories',     label: '題目分類' },
+    { key: 'my_answer',      label: '我當時的回答' },
+    { key: 'better_answer',  label: '回頭看該怎麼答' },
+    { key: 'difficulty',     label: '難度(1-5)' },
+    { key: 'tip',            label: '給學弟妹的提醒' }
+  ],
+
+  PRACTICAL: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'admission_idx',  label: '志願序' },
+    { key: 'univ',           label: '學校名稱' },
+    { key: 'major',          label: '科系名稱' },
+    { key: 'subject',        label: '術科科目' },
+    { key: 'duration_min',   label: '考試時間(分)' },
+    { key: 'equipment',      label: '提供的設備工具' },
+    { key: 'content',        label: '題目內容' },
+    { key: 'prep_advice',    label: '準備方式建議' },
+    { key: 'file_urls',      label: '相關相片連結' }
+  ],
+
+  FILES: [
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'file_id',        label: '檔案ID' },
+    { key: 'file_name',      label: '檔名' },
+    { key: 'file_url',       label: '檢視連結' },
+    { key: 'category',       label: '用途' },
+    { key: 'ref_idx',        label: '對應志願序' },
+    { key: 'prc_idx',        label: '對應術科序' },   // 編輯時要靠這個把相片還原到正確的術科項目
+    { key: 'uploaded_at',    label: '上傳時間' }
+  ],
+
+  LOG: [
+    { key: 'timestamp',      label: '時間' },
+    { key: 'level',          label: '層級' },
+    { key: 'submission_id',  label: '提交編號' },
+    { key: 'message',        label: '訊息' },
+    { key: 'detail',         label: '細節' }
+  ]
+};
+
+
+/**
+ * Sheet 版面設定 —— 讓 40 幾欄的資料還讀得下去。
+ * 沒列到的欄位一律用 DEFAULT_COL_WIDTH。
+ */
+const LAYOUT = {
+  DEFAULT_COL_WIDTH: 110,
+
+  COL_WIDTHS: {
+    submission_id: 95,  submitted_at: 135, grad_year: 85,  name: 95,
+    class_name: 90,     seat_no: 60,       email: 195,     phone: 110,
+    social_id: 110,     current_place: 230, school: 210,   dept: 70,
+    main_path: 155,     exam_group: 165,   rank_pct: 100,
+    certificates: 230,  experiences: 300,  activities: 230,
+    portfolio_focus: 300, portfolio_tool: 120,
+    reflection: 400,    advice_1: 230,     advice_2: 230,  advice_3: 230,
+    do_earlier: 270,    regret: 270,       publish_level: 220,
+    review_status: 90,  review_note: 260,  reviewed_at: 135,
+    updated_at: 135,    idx: 65,           admission_idx: 65,
+    prc_idx: 75,
+    univ: 175,          major: 160,        channel: 155,
+    stage1_result: 110, stage2_items: 205, stage2_score: 100,
+    final_result: 105,  result_rank: 70,   is_enrolled: 80,
+    format: 100,        prof_count: 80,    duration_min: 95,
+    flow: 300,          q_no: 55,          question: 340,
+    categories: 185,    my_answer: 300,    better_answer: 300,
+    difficulty: 85,     tip: 250,
+    subject: 140,       equipment: 270,    content: 350,
+    prep_advice: 270,   file_urls: 230,
+    file_id: 120,       file_name: 210,    file_url: 230,
+    category: 100,      ref_idx: 75,       uploaded_at: 135,
+    timestamp: 135,     level: 70,         message: 330,   detail: 330
+  },
+
+  // 凍結欄數：橫向捲動時保留辨識用的前幾欄
+  FROZEN_COLUMNS: {
+    MAIN: 4,        // 編號、時間、學年度、姓名
+    ADMISSIONS: 4,  // 編號、志願序、學校、科系
+    INTERVIEW: 4,
+    PRACTICAL: 4,
+    FILES: 1,
+    LOG: 2
+  }
+};
+
+
+/**
+ * 產生可選的畢業學年度清單（民國制）。
+ * 8 月起算新學年度：2026-08 → 115 學年度。
+ */
+function getGradYears_() {
+  const now = new Date();
+  let roc = now.getFullYear() - 1911;
+  if (now.getMonth() + 1 < 8) roc -= 1;   // 1~7 月仍屬前一學年度
+  const years = [];
+  for (let y = roc; y >= roc - 6; y--) years.push(String(y));
+  return years;
+}
+
+
+/** 傳給前端的設定（不含任何機密資訊） */
+function getClientConfig() {
+  return {
+    school: CONFIG.SCHOOL,
+    dept: CONFIG.DEPT,
+    gradYears: getGradYears_(),
+    maxAdmissions: CONFIG.MAX_ADMISSIONS,
+    maxFilesPerPractical: CONFIG.MAX_FILES_PER_PRACTICAL,
+    maxFilesTotal: CONFIG.MAX_FILES_TOTAL,
+    maxTotalBytes: CONFIG.MAX_TOTAL_BYTES,
+    imageMaxEdge: CONFIG.IMAGE_MAX_EDGE,
+    imageQuality: CONFIG.IMAGE_QUALITY,
+    lockAfterApproved: CONFIG.LOCK_AFTER_APPROVED,
+    options: OPTIONS
+  };
+}
+
+</script>
+<script>
+  const CFG = getClientConfig();
+  const GAS_BASE_URL = '';
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   common.html — 各頁共用：執行模式、API client、session、導覽列
+   ═══════════════════════════════════════════════════════════ */
+
+const SESS_KEY = 'wufai_ee_session_v1';
+
+/**
+ * 執行模式：
+ *   gas  — Apps Script 託管，用 google.script.run
+ *   api  — 靜態託管且 config.js 已填 /exec 網址，用 fetch + doPost
+ *   demo — 靜態託管但沒填網址，不連後端
+ */
+function runMode() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) return 'gas';
+  if (window.GRAD_API_URL && String(window.GRAD_API_URL).trim()) return 'api';
+  return 'demo';
+}
+
+/** 產生指向其他頁的網址，兩種託管方式的路徑規則不同 */
+function pageUrl(page) {
+  if (runMode() === 'gas') {
+    const base = (typeof GAS_BASE_URL !== 'undefined' && GAS_BASE_URL) ? GAS_BASE_URL : '';
+    return base + (page === 'index' ? '' : '?page=' + page);
+  }
+  return page === 'index' ? 'index.html' : page + '.html';
+}
+
+/**
+ * 呼叫後端。回傳 Promise<回應物件>。
+ * demo 模式一律回傳固定訊息，不會有網路請求。
+ */
+function api(action, params) {
+  const body = Object.assign({ action: action }, params || {});
+  const mode = runMode();
+
+  if (mode === 'demo') {
+    return Promise.resolve({
+      ok: false,
+      demo: true,
+      message: '目前是介面示範模式，未連接後端資料庫。'
+    });
+  }
+
+  if (mode === 'gas') {
+    // 注意：不能直接叫 routeApi_，Apps Script 的底線結尾函式是私有的、前端叫不到
+    return new Promise(function (resolve, reject) {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        .apiCall(body);
+    });
+  }
+
+  // text/plain 讓瀏覽器視為簡單請求，避開 Apps Script 無法回應的 CORS preflight
+  return fetch(String(window.GRAD_API_URL).trim(), {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.text(); })
+    .then(function (txt) {
+      try {
+        return JSON.parse(txt);
+      } catch (e) {
+        throw new Error('伺服器回應格式不正確，通常代表 Apps Script 未正確部署，' +
+                        '或「誰可以存取」沒有設成「所有人」。');
+      }
+    });
+}
+
+
+/* ── session（存在 sessionStorage，關掉分頁就失效）────────── */
+
+function getSession() {
+  try {
+    const raw = sessionStorage.getItem(SESS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setSession(s) {
+  try { sessionStorage.setItem(SESS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem(SESS_KEY); } catch (e) {}
+}
+
+function logout() {
+  const s = getSession();
+  if (s && s.token) { try { api('logout', { token: s.token }); } catch (e) {} }
+  clearSession();
+  location.href = pageUrl('index');
+}
+
+
+/* ── 導覽列 ──────────────────────────────────────────────── */
+
+/**
+ * 在 <body> 最前面插入導覽列。
+ * @param {string} active 目前頁面代碼，用來標示高亮
+ */
+function renderNav(active) {
+  const s = getSession();
+  const nav = document.createElement('nav');
+  nav.className = 'topnav';
+
+  const items = [
+    { key: 'index',  label: '📝 填寫表單',   href: pageUrl('index') },
+    { key: 'browse', label: '🔍 歷屆經驗查詢', href: pageUrl('browse') }
+  ];
+
+  let right = '';
+  if (s && s.role === 'teacher') {
+    items.push({ key: 'admin', label: '🗂️ 教師後台', href: pageUrl('admin') });
+    right = '<span class="nav-user">👩‍🏫 ' + escapeHtml(s.label || '教師') + '</span>' +
+            '<button type="button" class="nav-btn" onclick="logout()">登出</button>';
+  } else if (s && s.role === 'student') {
+    items.push({ key: 'edit', label: '✏️ 修改我的資料', href: pageUrl('index') + (runMode() === 'gas' ? '&' : '?') + 'mode=edit' });
+    right = '<span class="nav-user">🎓 ' + escapeHtml(s.label || '') + '</span>' +
+            '<button type="button" class="nav-btn" onclick="logout()">登出</button>';
+  } else {
+    right = '<a class="nav-btn" href="' + pageUrl('login') + '?role=student">畢業生登入修改</a>' +
+            '<a class="nav-btn primary" href="' + pageUrl('login') + '?role=teacher">教師登入審核</a>';
+  }
+
+  nav.innerHTML =
+    '<div class="nav-inner">' +
+      '<div class="nav-links">' +
+        items.map(function (it) {
+          return '<a href="' + it.href + '" class="nav-link' +
+                 (it.key === active ? ' active' : '') + '">' + it.label + '</a>';
+        }).join('') +
+      '</div>' +
+      '<div class="nav-right">' + right + '</div>' +
+    '</div>';
+
+  document.body.insertBefore(nav, document.body.firstChild);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** 讀取網址參數 */
+function qs(name) {
+  const m = new RegExp('[?&]' + name + '=([^&#]*)').exec(location.search);
+  return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+}
+
+/** 統一的錯誤訊息呈現 */
+function showBanner(container, text, kind) {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg-box ' + (kind || 'err');
+}
+</script>
+
+<script>
+let DATA = null;
+let VIEW = 'questions';
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderNav('browse');
+  document.getElementById('hdr-sub').textContent = CFG.school + '　' + CFG.dept;
+
+  document.querySelectorAll('.tab[data-view]').forEach(function (t) {
+    t.onclick = function () {
+      document.querySelectorAll('.tab[data-view]').forEach(function (x) { x.classList.remove('active'); });
+      t.classList.add('active');
+      VIEW = t.dataset.view;
+      render();
+    };
+  });
+
+  ['fUniv', 'fMajor', 'fYear', 'fCat'].forEach(function (id) {
+    document.getElementById(id).onchange = render;
+  });
+  let kwTimer = null;
+  document.getElementById('fKw').oninput = function () {
+    clearTimeout(kwTimer);
+    kwTimer = setTimeout(render, 250);
+  };
+
+  load();
+});
+
+function load() {
+  document.getElementById('overlay').classList.add('show');
+  api('browse', {})
+    .then(function (res) {
+      document.getElementById('overlay').classList.remove('show');
+      if (!res.ok) {
+        showBanner('#msgBox', res.message || '載入失敗。', res.demo ? 'ok' : 'err');
+        document.getElementById('result').innerHTML =
+          '<div class="empty">' + escapeHtml(res.message || '無法載入資料') + '</div>';
+        return;
+      }
+      DATA = res;
+      buildFilters();
+      renderStat();
+      render();
+    })
+    .catch(function (e) {
+      document.getElementById('overlay').classList.remove('show');
+      showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
+    });
+}
+
+function uniqueSorted(arr) {
+  return Array.from(new Set(arr.filter(Boolean))).sort(function (a, b) {
+    return String(a).localeCompare(String(b), 'zh-Hant');
+  });
+}
+
+function fillSelect(id, values, allLabel) {
+  const el = document.getElementById(id);
+  el.innerHTML = '<option value="">' + allLabel + '</option>';
+  values.forEach(function (v) {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    el.appendChild(o);
+  });
+}
+
+function buildFilters() {
+  const all = DATA.questions.concat(DATA.practicals, DATA.admissions);
+  fillSelect('fUniv', uniqueSorted(all.map(function (x) { return x.univ; })), '全部學校');
+  fillSelect('fMajor', uniqueSorted(all.map(function (x) { return x.major; })), '全部科系');
+  fillSelect('fYear', uniqueSorted(DATA.people.map(function (p) { return p.gradYear; }))
+    .map(String), '全部年度');
+  const cats = [];
+  DATA.questions.forEach(function (q) { (q.categories || []).forEach(function (c) { cats.push(c); }); });
+  fillSelect('fCat', uniqueSorted(cats), '全部分類');
+}
+
+function renderStat() {
+  document.getElementById('statRow').innerHTML =
+    '<div class="stat-chip"><b>' + DATA.stat.people + '</b>位學長姐</div>' +
+    '<div class="stat-chip"><b>' + DATA.stat.questions + '</b>題口試題目</div>' +
+    '<div class="stat-chip"><b>' + DATA.stat.practicals + '</b>項術科紀錄</div>' +
+    '<div class="stat-chip"><b>' + DATA.stat.admissions + '</b>筆校系結果</div>';
+}
+
+/** 依畢業學年度篩選時要靠 key 對應到人 */
+function yearOf(key) {
+  const p = DATA.people.filter(function (x) { return x.key === key; })[0];
+  return p ? String(p.gradYear) : '';
+}
+
+function passFilter(item, textFields) {
+  const univ = document.getElementById('fUniv').value;
+  const major = document.getElementById('fMajor').value;
+  const year = document.getElementById('fYear').value;
+  const cat = document.getElementById('fCat').value;
+  const kw = document.getElementById('fKw').value.trim().toLowerCase();
+
+  if (univ && item.univ !== univ) return false;
+  if (major && item.major !== major) return false;
+  if (year && yearOf(item.key) !== year) return false;
+  if (cat && (!item.categories || item.categories.indexOf(cat) < 0)) return false;
+  if (kw) {
+    const hay = textFields.map(function (f) { return String(item[f] || ''); }).join(' ').toLowerCase();
+    if (hay.indexOf(kw) < 0) return false;
+  }
+  return true;
+}
+
+function render() {
+  if (!DATA) return;
+  const box = document.getElementById('result');
+
+  if (VIEW === 'questions') {
+    const list = DATA.questions.filter(function (q) {
+      return passFilter(q, ['question', 'betterAnswer', 'tip']);
+    });
+    box.innerHTML = list.length ? list.map(questionCard).join('')
+      : emptyMsg('沒有符合條件的口試題目');
+
+  } else if (VIEW === 'practicals') {
+    const list = DATA.practicals.filter(function (p) {
+      return passFilter(p, ['content', 'equipment', 'prepAdvice', 'subject']);
+    });
+    box.innerHTML = list.length ? list.map(practicalCard).join('')
+      : emptyMsg('沒有符合條件的術科紀錄');
+
+  } else {
+    const univ = document.getElementById('fUniv').value;
+    const year = document.getElementById('fYear').value;
+    const kw = document.getElementById('fKw').value.trim().toLowerCase();
+    const list = DATA.people.filter(function (p) {
+      if (year && String(p.gradYear) !== year) return false;
+      if (univ) {
+        // 這個人有沒有錄取／報考該校
+        const hit = DATA.admissions.some(function (a) { return a.key === p.key && a.univ === univ; });
+        if (!hit) return false;
+      }
+      if (kw) {
+        const hay = [p.reflection, p.doEarlier, p.regret, p.currentPlace,
+                     (p.advices || []).join(' '), p.experiences].join(' ').toLowerCase();
+        if (hay.indexOf(kw) < 0) return false;
+      }
+      return true;
+    });
+    box.innerHTML = list.length ? list.map(personCard).join('')
+      : emptyMsg('沒有符合條件的學長姐');
+  }
+}
+
+function emptyMsg(t) {
+  return '<div class="empty">' + escapeHtml(t) + '<br><span style="font-size:13px">' +
+         '試試放寬篩選條件，或清空關鍵字。</span></div>';
+}
+
+function questionCard(q) {
+  const stars = q.difficulty ? '難度 ' + '★'.repeat(Number(q.difficulty) || 0) : '';
+  return '<div class="q-card">' +
+    '<div class="q-meta">' +
+      '<span class="tag">' + escapeHtml(q.univ) + '</span>' +
+      '<span class="tag gray">' + escapeHtml(q.major) + '</span>' +
+      (q.format ? '<span>' + escapeHtml(q.format) + '</span>' : '') +
+      (stars ? '<span>' + stars + '</span>' : '') +
+      '<span>' + escapeHtml(yearOf(q.key)) + ' 級</span>' +
+      (q.categories || []).map(function (c) {
+        return '<span class="tag warn">' + escapeHtml(c) + '</span>';
+      }).join('') +
+    '</div>' +
+    '<div class="q-text">' + escapeHtml(q.question) + '</div>' +
+    (q.betterAnswer ? '<div class="q-extra"><b>學長姐回頭看建議這樣答：</b>\n' +
+      escapeHtml(q.betterAnswer) + '</div>' : '') +
+    (q.tip ? '<div class="q-extra"><b>提醒：</b>' + escapeHtml(q.tip) + '</div>' : '') +
+  '</div>';
+}
+
+function practicalCard(p) {
+  return '<div class="q-card">' +
+    '<div class="q-meta">' +
+      '<span class="tag">' + escapeHtml(p.univ) + '</span>' +
+      '<span class="tag gray">' + escapeHtml(p.major) + '</span>' +
+      (p.subject ? '<span class="tag warn">' + escapeHtml(p.subject) + '</span>' : '') +
+      (p.durationMin ? '<span>' + escapeHtml(p.durationMin) + ' 分鐘</span>' : '') +
+      '<span>' + escapeHtml(yearOf(p.key)) + ' 級</span>' +
+    '</div>' +
+    '<div class="q-text">' + escapeHtml(p.content) + '</div>' +
+    (p.equipment ? '<div class="q-extra"><b>現場設備／工具：</b>\n' + escapeHtml(p.equipment) + '</div>' : '') +
+    (p.prepAdvice ? '<div class="q-extra"><b>準備方式建議：</b>\n' + escapeHtml(p.prepAdvice) + '</div>' : '') +
+  '</div>';
+}
+
+function personCard(p) {
+  const adms = DATA.admissions.filter(function (a) { return a.key === p.key; });
+  return '<div class="q-card">' +
+    '<div class="q-meta">' +
+      '<span class="tag">' + escapeHtml(p.gradYear) + ' 級</span>' +
+      '<strong style="font-size:15px;color:#1c2733">' + escapeHtml(p.displayName) + '</strong>' +
+      (p.mainPath ? '<span class="tag gray">' + escapeHtml(p.mainPath) + '</span>' : '') +
+      (p.willingQa ? '<span class="tag ok">願意回答提問</span>' : '') +
+    '</div>' +
+    (p.currentPlace ? '<div style="font-size:14px;margin-bottom:6px">🎯 ' +
+      escapeHtml(p.currentPlace) + '</div>' : '') +
+    (adms.length ? '<div class="q-meta">' + adms.map(function (a) {
+      const cls = a.finalResult === '正取' ? 'ok' : (a.finalResult === '備取' ? 'warn' : 'gray');
+      return '<span class="tag ' + cls + '">' + escapeHtml(a.univ + ' ' + a.major + ' ' +
+             a.finalResult + (a.resultRank ? a.resultRank : '')) + '</span>';
+    }).join('') + '</div>' : '') +
+    (p.certificates && p.certificates.length ?
+      '<div class="q-extra"><b>證照：</b>' + escapeHtml(p.certificates.join('、')) + '</div>' : '') +
+    (p.reflection ? '<div class="q-extra"><b>心得：</b>\n' + escapeHtml(p.reflection) + '</div>' : '') +
+    (p.advices && p.advices.length ? '<div class="q-extra"><b>給學弟妹的建議：</b>\n' +
+      p.advices.map(function (a, i) { return (i + 1) + '. ' + escapeHtml(a); }).join('\n') + '</div>' : '') +
+    (p.doEarlier ? '<div class="q-extra"><b>高一高二該先做什麼：</b>\n' + escapeHtml(p.doEarlier) + '</div>' : '') +
+    (p.regret ? '<div class="q-extra"><b>最後悔沒做的事：</b>\n' + escapeHtml(p.regret) + '</div>' : '') +
+  '</div>';
+}
+</script>
+
+</body>
+</html>
