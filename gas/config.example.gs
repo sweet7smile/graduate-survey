@@ -31,6 +31,8 @@ const CONFIG = {
 
   // ── 表單限制 ────────────────────────────────────────────
   MAX_ADMISSIONS: 6,                  // 推甄校系筆數上限
+  GRAD_YEAR_COUNT: 7,                 // 畢業學年度下拉要列幾屆
+  GRAD_YEAR_LATEST: '',               // 留空＝自動判斷；填 '115' 可強制指定最新的一屆
 
   // ── 行為 ────────────────────────────────────────────────
   BLOCK_DUPLICATE: true,              // 同 Email + 同學年度 是否阻擋重複提交
@@ -292,14 +294,35 @@ const LAYOUT = {
 
 /**
  * 產生可選的畢業學年度清單（民國制）。
- * 8 月起算新學年度：2026-08 → 115 學年度。
+ *
+ * 關鍵是「目前學年度」不等於「最近一個已畢業的學年度」：
+ *   115 學年度 = 2026-08 ～ 2027-07，這批學生 2027 年 6 月才畢業。
+ *   所以 2026 年 8 月的當下，最新的畢業生是 114 學年度，
+ *   把 115 列進去會讓還沒畢業的學年度出現在選單裡。
+ *
+ * 判斷方式：先算出目前學年度，若「該學年度的 6 月」還沒到，就退一年。
  */
 function getGradYears_() {
-  const now = new Date();
-  let roc = now.getFullYear() - 1911;
-  if (now.getMonth() + 1 < 8) roc -= 1;   // 1~7 月仍屬前一學年度
+  // 需要提前開放尚未畢業的那一屆填寫時，
+  // 把 CONFIG.GRAD_YEAR_LATEST 設成該學年度（例如 '115'）即可覆寫自動判斷。
+  const override = String(CONFIG.GRAD_YEAR_LATEST || '').trim();
+
+  let latest;
+  if (override) {
+    latest = parseInt(override, 10);
+  } else {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+
+    let academic = now.getFullYear() - 1911;
+    if (month < 8) academic -= 1;          // 1~7 月仍屬前一學年度
+
+    latest = academic;
+    if (month >= 8 || month < 6) latest -= 1;   // 該學年度的 6 月還沒到 = 還沒畢業
+  }
+
   const years = [];
-  for (let y = roc; y >= roc - 6; y--) years.push(String(y));
+  for (let i = 0; i < CONFIG.GRAD_YEAR_COUNT; i++) years.push(String(latest - i));
   return years;
 }
 
