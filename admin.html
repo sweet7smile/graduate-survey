@@ -131,7 +131,9 @@ section.card > h2 .num {
 .field .sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; }
 .req::after { content: " *"; color: var(--danger); }
 
-input[type=text], input[type=email], input[type=tel], input[type=number],
+/* 用排除法而非逐一列舉輸入類型：先前漏掉 password 導致密碼欄套不到樣式，
+   掉回瀏覽器預設寬度，跟旁邊的欄位對不齊。 */
+input:not([type=checkbox]):not([type=radio]):not([type=file]),
 select, textarea {
   width: 100%;
   padding: 10px 12px;
@@ -146,6 +148,15 @@ input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--brand-light);
   box-shadow: 0 0 0 3px rgba(44,95,138,.15);
+}
+
+/* 瀏覽器自動填入會蓋上黃/藍底色，跟隔壁欄位看起來不一致 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
 }
 textarea { resize: vertical; min-height: 78px; line-height: 1.6; }
 input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); background: #fff5f4; }
