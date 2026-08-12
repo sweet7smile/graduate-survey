@@ -594,69 +594,265 @@ table.data td.num { text-align: center; color: var(--muted); }
 <body>
 
 <header class="top">
-  <h1>教師後台</h1>
-  <p id="hdr-sub">審核 · 檢視 · 匯出</p>
+  <h1>畢業生升學資料蒐集</h1>
+  <p id="hdr-sub">國立霧峰高級農工職業學校　電子科</p>
 </header>
 
-<main class="wide">
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+  <div class="progress-text" id="progText">必填完成度 0%</div>
+</div>
 
-  <div id="msgBox" class="msg-box"></div>
-  <div class="stat-row" id="statRow"></div>
+<main>
 
+  <!-- 蜜罐欄位：真人在畫面上看不到也點不到，只有無腦把整份表單填一遍的
+       自動化機器人才會填到它。刻意不設 name 屬性，避免瀏覽器自動填入
+       誤觸；欄位 key 要跟 config.gs 的 CONFIG.HONEYPOT_FIELD 一致。 -->
+  <div class="hp-trap" aria-hidden="true">
+    <label for="hpCheck">請勿填寫此欄位</label>
+    <input type="text" id="hpCheck" data-m="hp_check" tabindex="-1" autocomplete="off">
+  </div>
+
+  <p class="hint">
+    這份表單會蒐集你的升學經驗（推甄校系、口試題目、術科內容、心得），
+    整理後提供給學弟妹參考。<strong>大部分欄位都是選填</strong>，
+    有印象的填、沒印象的跳過就好，重點是口試題目與心得。
+    填寫過程會自動存草稿，關掉頁面再打開可以接著填。
+  </p>
+
+  <!-- ═══ A 基本資料 ═══ -->
   <section class="card">
-    <h2><span class="num">🔍</span>篩選與匯出</h2>
+    <h2><span class="num">A</span>基本資料</h2>
     <div class="card-body">
-      <div class="filter-bar">
-        <div class="field" style="margin:0">
-          <label>審核狀態</label>
-          <select id="fStatus">
-            <option value="">全部</option>
-            <option value="待審">待審</option>
-            <option value="通過">通過</option>
-            <option value="退回修改">退回修改</option>
-          </select>
+
+      <div class="grid2">
+        <div class="field">
+          <label class="req">畢業學年度</label>
+          <select data-m="grad_year" data-fill="__GRAD_YEARS" data-type="select" data-placeholder="請選擇"></select>
         </div>
-        <div class="field" style="margin:0">
-          <label>畢業學年度</label>
-          <select id="fYear"><option value="">全部年度</option></select>
-        </div>
-        <div class="field" style="margin:0">
-          <label>關鍵字</label>
-          <input type="text" id="fKw" placeholder="姓名、學校、Email…">
+        <div class="field">
+          <label>畢業學校 / 科別</label>
+          <div class="readonly-box" id="schoolBox">—</div>
         </div>
       </div>
 
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
-        <select id="expSheet" style="width:auto;min-width:170px">
-          <option value="Main">Main（基本資料＋心得）</option>
-          <option value="Admissions">Admissions（推甄校系）</option>
-          <option value="Interview">Interview（口試題目）</option>
-          <option value="Practical">Practical（術科）</option>
-          <option value="Files">Files（相片清單）</option>
-        </select>
-        <label class="nav-user" style="color:var(--muted);display:flex;align-items:center;gap:6px">
-          <input type="checkbox" id="expApproved"> 只匯出已審核通過
-        </label>
-        <button type="button" class="btn-ghost" id="btnExport">⬇ 匯出 CSV</button>
-        <button type="button" class="btn-ghost" id="btnReload">↻ 重新整理</button>
+      <div class="grid3">
+        <div class="field">
+          <label>班級</label>
+          <input type="text" data-m="class_name" placeholder="例：電子三甲">
+        </div>
+        <div class="field">
+          <label>座號</label>
+          <input type="text" data-m="seat_no" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label class="req">姓名</label>
+          <input type="text" data-m="name">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="req">聯絡 Email<span class="sub">送出後會寄一封確認信到這個信箱</span></label>
+        <input type="email" data-m="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>手機<span class="sub">選填</span></label>
+          <input type="tel" data-m="phone" inputmode="tel">
+        </div>
+        <div class="field">
+          <label>IG / Line ID<span class="sub">願意讓學弟妹詢問再填</span></label>
+          <input type="text" data-m="social_id">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="req">目前就讀學校／服務單位<span class="sub">最終落點</span></label>
+        <input type="text" data-m="current_place" placeholder="例：國立臺北科技大學 電子工程系">
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ B 升學管道 ═══ -->
+  <section class="card">
+    <h2><span class="num">B</span>升學／出路管道</h2>
+    <div class="card-body">
+
+      <div class="field">
+        <label class="req">主要出路</label>
+        <div class="radio-col" data-m="main_path" data-fill="MAIN_PATHS" data-type="radio"></div>
+      </div>
+
+      <div class="field">
+        <label>報考群類</label>
+        <select data-m="exam_group" data-fill="EXAM_GROUPS" data-type="select" data-placeholder="請選擇（未報考統測可跳過）"></select>
+      </div>
+
+      <details class="fold">
+        <summary>統測成績（完全選填，不想填可以直接跳過）</summary>
+        <div>
+          <div class="grid3 keep">
+            <div class="field"><label>國文</label><input type="number" data-m="tve_ch" inputmode="decimal"></div>
+            <div class="field"><label>英文</label><input type="number" data-m="tve_en" inputmode="decimal"></div>
+            <div class="field"><label>數學</label><input type="number" data-m="tve_math" inputmode="decimal"></div>
+          </div>
+          <div class="grid3 keep">
+            <div class="field"><label>專業一</label><input type="number" data-m="tve_prof1" inputmode="decimal"></div>
+            <div class="field"><label>專業二</label><input type="number" data-m="tve_prof2" inputmode="decimal"></div>
+            <div class="field"><label>總分</label><input type="number" data-m="tve_total" inputmode="decimal"></div>
+          </div>
+          <div class="field">
+            <label>在校成績班排百分比<span class="sub">例：前 15%</span></label>
+            <input type="text" data-m="rank_pct" placeholder="前 15%">
+          </div>
+        </div>
+      </details>
+
+      <div class="field">
+        <label>持有證照</label>
+        <div class="chk-group" data-m="certificates" data-fill="CERTIFICATES" data-type="checkbox"></div>
+        <input type="text" data-other-for="certificates" placeholder="其他證照（用頓號分隔）" style="margin-top:8px">
+      </div>
+
+      <div class="field">
+        <label>競賽 / 專題經歷<span class="sub">技藝競賽、專題製作、小論文、科展…</span></label>
+        <textarea data-m="experiences" placeholder="一行一項，例：&#10;114 全國工科技藝競賽 數位電子職種 優勝&#10;專題：基於 ESP32 的溫室環境監控系統"></textarea>
+      </div>
+
+      <div class="field">
+        <label>幹部 / 社團 / 志工</label>
+        <textarea data-m="activities" placeholder="一行一項"></textarea>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ C/D/E 推甄校系（含口試、術科） ═══ -->
+  <section class="card">
+    <h2><span class="num">C</span>推甄校系 · 口試 · 術科</h2>
+    <div class="card-body">
+
+      <p class="hint" id="admHint">
+        每按一次「新增校系」會出現一張卡片，裡面可以再新增<strong>口試題目</strong>與<strong>術科項目</strong>。
+        最多 6 個志願。若你走的是就業或分發，這一段可以整段跳過。
+      </p>
+
+      <div id="admList"></div>
+      <button type="button" class="btn-add" id="btnAddAdm">＋ 新增校系</button>
+
+    </div>
+  </section>
+
+  <!-- ═══ F 備審資料 ═══ -->
+  <section class="card">
+    <h2><span class="num">F</span>備審資料製作</h2>
+    <div class="card-body">
+      <div class="grid3">
+        <div class="field"><label>總頁數</label><input type="number" data-m="portfolio_pages" inputmode="numeric"></div>
+        <div class="field"><label>製作工具</label><input type="text" data-m="portfolio_tool" placeholder="Canva / Word / PPT"></div>
+        <div class="field"><label>花費時數</label><input type="number" data-m="portfolio_hours" inputmode="numeric"></div>
+      </div>
+      <div class="field">
+        <label>備審重點放在哪裡</label>
+        <textarea data-m="portfolio_focus" placeholder="例：專題製作過程佔了一半篇幅，附上實體照片與電路圖"></textarea>
+      </div>
+      <div class="field">
+        <label>面試時有被問到備審內容嗎</label>
+        <div class="radio-col" data-m="portfolio_asked" data-fill="PORTFOLIO_ASKED" data-type="radio"></div>
       </div>
     </div>
   </section>
 
-  <div class="table-wrap">
-    <table class="data">
-      <thead>
-        <tr>
-          <th>編號</th><th>畢業年份</th><th>姓名</th><th>班級</th>
-          <th>最終落點</th><th>公開層級</th>
-          <th>校系</th><th>口試</th><th>術科</th><th>相片</th>
-          <th>狀態</th><th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="12" class="empty">載入中…</td></tr>
-      </tbody>
-    </table>
+  <!-- ═══ G 心得與建議 ═══ -->
+  <section class="card">
+    <h2><span class="num">G</span>心得與給學弟妹的建議</h2>
+    <div class="card-body">
+
+      <p class="hint">這一段是整份表單最有價值的部分，也是學弟妹最想看的。麻煩多寫一點 🙏</p>
+
+      <div class="field">
+        <label class="req">整體心得<span class="sub" id="reflCount">建議 200 字以上</span></label>
+        <textarea data-m="reflection" rows="7"
+          placeholder="從決定升學方向、準備備審、一階放榜到二階面試，整個過程的感受與經驗。"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="req">給學弟妹的 3 個具體建議<span class="sub">至少填 1 則</span></label>
+        <input type="text" data-m="advice_1" placeholder="建議 1" style="margin-bottom:8px">
+        <input type="text" data-m="advice_2" placeholder="建議 2" style="margin-bottom:8px">
+        <input type="text" data-m="advice_3" placeholder="建議 3">
+      </div>
+
+      <div class="field">
+        <label>高一、高二應該先做什麼</label>
+        <textarea data-m="do_earlier"></textarea>
+      </div>
+
+      <div class="field">
+        <label>最後悔沒做的一件事</label>
+        <textarea data-m="regret"></textarea>
+      </div>
+
+      <div class="field">
+        <label>後續意願</label>
+        <div class="chk-group">
+          <label><input type="checkbox" data-m="willing_share"> 願意回校分享經驗</label>
+          <label><input type="checkbox" data-m="willing_qa"> 接受學弟妹私訊提問</label>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ H 授權 ═══ -->
+  <section class="card">
+    <h2><span class="num">H</span>個人資料與授權</h2>
+    <div class="card-body">
+
+      <details class="fold" open>
+        <summary>個人資料蒐集告知事項（請閱讀）</summary>
+        <div style="font-size:13px;color:#4a5a6a;line-height:1.75">
+          <p style="margin-top:0"><strong>蒐集目的：</strong>建立本科畢業生升學經驗資料庫，供在校學生升學輔導參考，以及科務發展統計分析之用。</p>
+          <p><strong>蒐集項目：</strong>姓名、聯絡方式、畢業與升學資訊、面試與術科經驗、心得文字及你自願上傳之相片。</p>
+          <p><strong>利用期間與方式：</strong>資料保存於本科教師管理之 Google 試算表與雲端硬碟，僅供本科教學輔導使用，不作商業用途、不對外提供第三方。</p>
+          <p><strong>公開範圍：</strong>依你在下方選擇的公開層級處理。選擇「匿名公開」者，對外呈現時不會出現姓名與聯絡方式。</p>
+          <p style="margin-bottom:0"><strong>你的權利：</strong>可隨時來信要求查詢、更正或刪除你的資料。聯絡窗口：本科承辦教師。</p>
+        </div>
+      </details>
+
+      <div class="field">
+        <label class="req">公開層級</label>
+        <div class="radio-col" data-m="publish_level" data-fill="PUBLISH_LEVELS" data-type="radio"></div>
+      </div>
+
+      <div class="field">
+        <div class="chk-group">
+          <label><input type="checkbox" data-m="consent_photo"> 同意所上傳之相片供校內教學輔導使用</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="chk-group">
+          <label style="border-color:#2c5f8a">
+            <input type="checkbox" data-m="consent_pdpa" id="chkPdpa">
+            <strong>我已閱讀並同意上述個人資料蒐集告知事項</strong>
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ 送出 ═══ -->
+  <div class="submit-area">
+    <div id="msgBox" class="msg-box"></div>
+    <div class="draft-row">
+      <span id="draftInfo">草稿尚未儲存</span>
+      <button type="button" class="btn-ghost" id="btnClearDraft">清除草稿</button>
+    </div>
+    <button type="button" class="btn-submit" id="btnSubmit" disabled>請先勾選個資同意</button>
   </div>
 
 </main>
@@ -665,69 +861,144 @@ table.data td.num { text-align: center; color: var(--muted); }
   國立霧峰高級農工職業學校　電子科　畢業生升學資料蒐集系統
 </footer>
 
-<!-- 詳細內容 -->
-<div class="modal" id="modal">
-  <div class="modal-box">
-    <div class="modal-head">
-      <h3 style="margin:0;font-size:18px" id="mTitle">詳細資料</h3>
-      <button type="button" class="btn-ghost" onclick="closeModal()">關閉</button>
-    </div>
-    <div id="mBody"></div>
-    <div style="text-align:right;margin-top:6px">
-      <button type="button" class="btn-ghost" id="btnEditHistory">📜 查看修改紀錄</button>
-    </div>
-    <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:14px">
-      <div class="field">
-        <label>審核意見<span class="sub">退回修改時會一併寄給學生</span></label>
-        <textarea id="mNote" rows="3" placeholder="例：口試題目部分請補充第二個志願的內容"></textarea>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn-sm ok" onclick="doReview('通過')">✅ 審核通過（之後學生無法修改）</button>
-        <button type="button" class="btn-sm warn" onclick="doReview('退回修改')">↩ 退回修改（寄信通知）</button>
-        <button type="button" class="btn-sm" onclick="doReview('待審')">↺ 改回待審</button>
-      </div>
-    </div>
 
-    <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:14px">
-      <button type="button" class="btn-sm del-row" id="btnOpenDelete">🗑️ 刪除這筆資料</button>
+<!-- ══════════ 動態卡片樣板 ══════════ -->
+
+<template id="tpl-admission">
+  <div class="dyn-card adm-card">
+    <div class="dyn-head">
+      <span class="dyn-title">志願 <span class="adm-no"></span></span>
+      <button type="button" class="btn-del" data-act="del-adm">刪除此校系</button>
+    </div>
+    <div class="dyn-body">
+
+      <div class="adm-fields">
+        <div class="grid2">
+          <div class="field"><label class="req">學校名稱</label>
+            <input type="text" data-a="univ" placeholder="例：國立臺北科技大學"></div>
+          <div class="field"><label class="req">科系名稱</label>
+            <input type="text" data-a="major" placeholder="例：電子工程系"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>招生管道</label>
+            <select data-a="channel" data-fill="CHANNELS" data-type="select" data-placeholder="請選擇"></select></div>
+          <div class="field"><label>一階篩選結果</label>
+            <select data-a="stage1_result" data-fill="STAGE1_RESULTS" data-type="select" data-placeholder="請選擇"></select></div>
+        </div>
+        <div class="field">
+          <label>二階指定項目</label>
+          <div class="chk-group" data-a="stage2_items" data-fill="STAGE2_ITEMS" data-type="checkbox"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>二階成績</label><input type="text" data-a="stage2_score" placeholder="選填"></div>
+          <div class="field"><label>最終結果</label>
+            <select data-a="final_result" data-fill="FINAL_RESULTS" data-type="select" data-placeholder="請選擇"></select></div>
+          <div class="field"><label>名次</label><input type="number" data-a="result_rank" inputmode="numeric" placeholder="正/備取名次"></div>
+        </div>
+        <div class="chk-group">
+          <label><input type="checkbox" data-a="is_enrolled"> 這是我最後就讀的學校</label>
+        </div>
+
+        <div class="sub-section-title">🎙️ 面試基本資訊</div>
+        <div class="grid3">
+          <div class="field"><label>面試形式</label>
+            <select data-a="itv_format" data-fill="INTERVIEW_FORMATS" data-type="select" data-placeholder="請選擇"></select></div>
+          <div class="field"><label>教授人數</label><input type="number" data-a="itv_prof_count" inputmode="numeric"></div>
+          <div class="field"><label>時間長度(分)</label><input type="number" data-a="itv_duration_min" inputmode="numeric"></div>
+        </div>
+        <div class="field">
+          <label>面試流程</label>
+          <textarea data-a="itv_flow" placeholder="例：先自我介紹 1 分鐘 → 教授輪流提問 → 最後問有沒有問題想問"></textarea>
+        </div>
+      </div>
+
+      <div class="sub-section-title">❓ 口試題目<span class="sub" style="font-weight:400;color:#6b7a8c">（一題一筆，這是最重要的資料）</span></div>
+      <div class="q-list"></div>
+      <button type="button" class="btn-add small" data-act="add-q">＋ 新增一題口試題目</button>
+
+      <div class="sub-section-title">🔧 術科 / 實作</div>
+      <div class="p-list"></div>
+      <button type="button" class="btn-add small" data-act="add-p">＋ 新增一個術科項目</button>
+
     </div>
   </div>
-</div>
+</template>
 
-<!-- 刪除確認：列表與詳細視窗共用，避免兩份重複的刪除邏輯 -->
-<div class="modal" id="delModal">
-  <div class="modal-box" style="max-width:480px">
-    <div class="modal-head">
-      <h3 style="margin:0;font-size:18px;color:var(--danger)">🗑️ 刪除資料</h3>
-      <button type="button" class="btn-ghost" onclick="closeDelModal()">取消</button>
+<template id="tpl-question">
+  <div class="sub-card q-item">
+    <div class="sub-head">
+      <span>第 <span class="q-no"></span> 題</span>
+      <button type="button" class="btn-del" data-act="del-q">刪除</button>
     </div>
+    <div class="field">
+      <label>題目</label>
+      <textarea data-q="question" rows="2" placeholder="例：你的專題中你負責哪一部分？遇到最大的困難是什麼？"></textarea>
+    </div>
+    <div class="field">
+      <label>題目分類</label>
+      <div class="chk-group" data-q="categories" data-fill="QUESTION_CATEGORIES" data-type="checkbox"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>我當時怎麼回答</label><textarea data-q="my_answer" rows="2"></textarea></div>
+      <div class="field"><label>現在回頭看該怎麼答</label><textarea data-q="better_answer" rows="2"></textarea></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>難度</label>
+        <select data-q="difficulty" data-fill="__DIFFICULTY" data-type="select" data-placeholder="請選擇"></select></div>
+      <div class="field"><label>給學弟妹的提醒</label><input type="text" data-q="tip"></div>
+    </div>
+  </div>
+</template>
 
-    <div id="delSummary" class="hint warn" style="margin-bottom:12px"></div>
-
-    <p style="font-size:13px;line-height:1.75;color:#8a3a30;margin:0 0 12px">
-      會刪除 <strong>Main／Admissions／Interview／Practical／Files</strong>
-      五張分頁中屬於這筆的所有列。相片會搬到雲端硬碟的
-      「<strong>_已刪除</strong>」資料夾（誤刪還救得回來）。
-      <br><strong>此操作無法從網頁復原。</strong>
-    </p>
+<template id="tpl-practical">
+  <div class="sub-card p-item">
+    <div class="sub-head">
+      <span>術科項目 <span class="p-no"></span></span>
+      <button type="button" class="btn-del" data-act="del-p">刪除</button>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>術科科目</label>
+        <select data-p="subject" data-fill="PRACTICAL_SUBJECTS" data-type="select" data-placeholder="請選擇"></select></div>
+      <div class="field"><label>考試時間(分)</label><input type="number" data-p="duration_min" inputmode="numeric"></div>
+    </div>
+    <div class="field">
+      <label>題目內容</label>
+      <textarea data-p="content" rows="3" placeholder="例：給定電路圖，用麵包板接出一個 555 無穩態多諧振盪器，並用示波器量測輸出頻率"></textarea>
+    </div>
+    <div class="field">
+      <label>現場提供的設備 / 工具</label>
+      <textarea data-p="equipment" rows="2" placeholder="例：麵包板、電阻電容包、三用電表、示波器；需自備電子計算機"></textarea>
+    </div>
+    <div class="field">
+      <label>準備方式建議</label>
+      <textarea data-p="prep_advice" rows="2"></textarea>
+    </div>
 
     <div class="field">
-      <label>請輸入這筆資料的編號 <code id="delCode">------</code> 以確認</label>
-      <input type="text" id="delConfirm" maxlength="6" autocomplete="off"
-             placeholder="輸入 6 碼編號"
-             style="text-transform:uppercase;letter-spacing:3px;font-weight:700">
+      <label>相關相片<span class="sub">考題、作品、器材（最多 <span class="max-files"></span> 張）</span></label>
+      <p class="hint warn" style="margin-bottom:8px">
+        上傳前請務必遮蔽<strong>准考證號、身分證字號、他人臉部與姓名</strong>。
+        圖片會在你的手機上先壓縮再上傳。
+      </p>
+      <div class="field" style="margin-bottom:8px">
+        <select data-p="file_category" data-fill="FILE_CATEGORIES" data-type="select" data-placeholder="相片用途"></select>
+      </div>
+      <label class="file-drop">
+        <input type="file" accept="image/*" multiple class="file-input">
+        <div>點下方按鈕選擇相片<br><span class="pick">選擇相片</span></div>
+      </label>
+      <div class="thumbs"></div>
     </div>
-
-    <button type="button" class="btn-submit danger" id="btnDelete" disabled>
-      確認刪除，無法復原
-    </button>
   </div>
-</div>
+</template>
 
+
+<!-- ══════════ 遮罩 ══════════ -->
 <div class="overlay" id="overlay">
-  <div class="overlay-box">
+  <div class="overlay-box" id="overlayBox">
     <div class="spinner"></div>
-    <div style="font-weight:700" id="ovText">載入中…</div>
+    <div id="ovTitle" style="font-weight:700;font-size:17px">處理中…</div>
+    <div id="ovText" style="color:#6b7a8c;font-size:14px;margin-top:6px">請勿關閉頁面</div>
   </div>
 </div>
 
@@ -1347,634 +1618,825 @@ function showBanner(container, text, kind) {
 </script>
 
 <script>
-let LIST = [];
-let CURRENT = null;
+/* ═══════════════════════════════════════════════════════════
+   霧峰農工電子科 畢業生升學資料蒐集 — 前端邏輯
+   CFG 由 form.html 於載入時注入
+   ═══════════════════════════════════════════════════════════ */
 
+const DRAFT_KEY = 'wufai_ee_grad_draft_v1';
+const DIFFICULTY = ['1（很簡單）', '2', '3（普通）', '4', '5（很難）'];
+let radioSeq = 0;
+let draftTimer = null;
+
+/* runMode() / api() / renderNav() 等共用函式定義在 common.html */
+
+let EDIT_MODE = false;      // 畢業生登入後修改既有資料
+let EDIT_LOCKED = false;    // 已審核通過，唯讀
+
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+
+/* ── 啟動 ─────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function () {
-  renderNav('admin');
+  $('#schoolBox').textContent = CFG.school + '　' + CFG.dept;
+  $('#hdr-sub').textContent = CFG.school + '　' + CFG.dept;
 
-  const s = getSession();
-  if (!s || s.role !== 'teacher') {
-    location.href = pageUrl('login') + '?role=teacher';
-    return;
+  fillOptions(document);
+  bindGlobalEvents();
+
+  const sess = getSession();
+  EDIT_MODE = qs('mode') === 'edit' && sess && sess.role === 'student';
+  renderNav(EDIT_MODE ? 'edit' : 'form');
+
+  if (EDIT_MODE) {
+    loadOwnRecord();          // 載入既有資料，載完才顯示表單
+  } else {
+    showModeBanner();
+    restoreDraft();
+    updateProgress();
+    if (!$$('.adm-card').length) addAdmission();
   }
-  document.getElementById('hdr-sub').textContent = '審核 · 檢視 · 匯出　|　' + (s.label || '');
-
-  ['fStatus', 'fYear'].forEach(function (id) {
-    document.getElementById(id).onchange = renderTable;
-  });
-  let t = null;
-  document.getElementById('fKw').oninput = function () {
-    clearTimeout(t); t = setTimeout(renderTable, 200);
-  };
-  // 不能直接指定 load，否則事件物件會被當成 keepBanner 傳進去（truthy）
-  document.getElementById('btnReload').onclick = function () { load(); };
-  document.getElementById('btnExport').onclick = doExport;
-  document.getElementById('btnEditHistory').onclick = openEditHistory;
-  bindDelete();
-  bindEditableFields();
-
-  load();
 });
 
-function busy(on, text) {
-  document.getElementById('ovText').textContent = text || '載入中…';
-  document.getElementById('overlay').classList.toggle('show', !!on);
-}
 
-function token() { const s = getSession(); return s ? s.token : ''; }
+/* ── 編輯模式：載入自己既有的資料 ─────────────────────── */
 
-/** session 逾時就導回登入頁 */
-function handleAuthFail(res) {
-  if (res && !res.ok && /登入已逾時|權限不足/.test(res.message || '')) {
-    clearSession();
-    location.href = pageUrl('login') + '?role=teacher';
-    return true;
-  }
-  return false;
-}
-
-/**
- * 重新載入列表。
- * @param {boolean} keepBanner 保留現有訊息 —— 審核／刪除成功後會接著呼叫 load()，
- *        若這裡把訊息框清掉，剛顯示的成功訊息會立刻變成隱藏，老師等於沒有回饋。
- */
-function load(keepBanner) {
-  busy(true);
-  api('adminList', { token: token() })
+function loadOwnRecord() {
+  showOverlay('載入你的資料…', '請稍候');
+  api('loadOwn', { token: getSession().token })
     .then(function (res) {
-      busy(false);
-      if (handleAuthFail(res)) return;
-      if (!res.ok) { showBanner('#msgBox', res.message || '載入失敗。'); return; }
-      LIST = res.list;
-      if (!keepBanner) document.getElementById('msgBox').className = 'msg-box';
-      renderStat(res.stat);
-      buildYearFilter();
-      renderTable();
-    })
-    .catch(function (e) {
-      busy(false);
-      showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
-    });
-}
-
-function renderStat(st) {
-  document.getElementById('statRow').innerHTML =
-    '<div class="stat-chip"><b>' + st.total + '</b>總筆數</div>' +
-    '<div class="stat-chip"><b>' + st.pending + '</b>待審</div>' +
-    '<div class="stat-chip"><b>' + st.approved + '</b>已通過</div>' +
-    '<div class="stat-chip"><b>' + st.returned + '</b>已退回</div>';
-}
-
-function buildYearFilter() {
-  const years = Array.from(new Set(LIST.map(function (x) { return x.gradYear; })))
-    .filter(Boolean).sort().reverse();
-  const el = document.getElementById('fYear');
-  const keep = el.value;
-  el.innerHTML = '<option value="">全部年度</option>';
-  years.forEach(function (y) {
-    const o = document.createElement('option');
-    o.value = y; o.textContent = gradYearLabel(y, true);
-    el.appendChild(o);
-  });
-  el.value = keep;
-}
-
-function statusTag(st) {
-  const cls = st === '通過' ? 'ok' : (st === '退回修改' ? 'err' : 'warn');
-  return '<span class="tag ' + cls + '">' + escapeHtml(st) + '</span>';
-}
-
-function renderTable() {
-  const fs = document.getElementById('fStatus').value;
-  const fy = document.getElementById('fYear').value;
-  const kw = document.getElementById('fKw').value.trim().toLowerCase();
-
-  const rows = LIST.filter(function (x) {
-    if (fs && x.reviewStatus !== fs) return false;
-    if (fy && x.gradYear !== fy) return false;
-    if (kw) {
-      const hay = [x.name, x.email, x.currentPlace, x.className, x.code].join(' ').toLowerCase();
-      if (hay.indexOf(kw) < 0) return false;
-    }
-    return true;
-  });
-
-  const tb = document.getElementById('tbody');
-  if (!rows.length) {
-    tb.innerHTML = '<tr><td colspan="12" class="empty">沒有符合條件的資料</td></tr>';
-    return;
-  }
-
-  tb.innerHTML = rows.map(function (x) {
-    // 「不公開」選項雖已下架，舊資料仍可能是這個值，這裡要顯示得出來
-    const anon = x.publishLevel.indexOf('匿名') === 0 ? 'gray'
-               : (x.publishLevel.indexOf('僅供校內') === 0 ? 'err' : 'ok');
-    const shortLevel = x.publishLevel.indexOf('完全公開') === 0 ? '公開'
-                     : (x.publishLevel.indexOf('匿名') === 0 ? '匿名' : '不公開');
-    return '<tr>' +
-      '<td><code>' + escapeHtml(x.code) + '</code></td>' +
-      '<td class="num">' + escapeHtml(gradYearLabel(x.gradYear, true)) + '</td>' +
-      '<td><strong>' + escapeHtml(x.name) + '</strong></td>' +
-      '<td>' + escapeHtml(x.className) + '</td>' +
-      '<td>' + escapeHtml(x.currentPlace) + '</td>' +
-      '<td><span class="tag ' + anon + '">' + shortLevel + '</span></td>' +
-      '<td class="num">' + x.counts.adm + '</td>' +
-      '<td class="num">' + x.counts.itv + '</td>' +
-      '<td class="num">' + x.counts.prc + '</td>' +
-      '<td class="num">' + x.counts.file + '</td>' +
-      '<td>' + statusTag(x.reviewStatus) +
-        // 只有「退回修改」狀態才顯示備註——避免舊資料裡殘留的退件意見，
-        // 顯示在「通過」狀態旁邊造成誤解（例如「通過」下面掛著「退回」字樣）
-        (x.reviewStatus === '退回修改' && x.reviewNote ?
-          '<div style="font-size:11px;color:var(--muted);margin-top:3px">' +
-          escapeHtml(x.reviewNote.slice(0, 30)) + '</div>' : '') + '</td>' +
-      '<td><div class="row-actions">' +
-        '<button type="button" class="btn-sm" onclick="openDetail(\'' +
-          escapeHtml(x.submissionId) + '\')">檢視／審核</button>' +
-        '<button type="button" class="btn-sm del-row" title="刪除這筆資料" ' +
-          'onclick="openDelete(\'' + escapeHtml(x.submissionId) + '\')">🗑️ 刪除</button>' +
-      '</div></td>' +
-    '</tr>';
-  }).join('');
-}
-
-
-/* ── 詳細內容 ─────────────────────────── */
-
-function openDetail(submissionId) {
-  busy(true, '載入詳細資料…');
-  api('adminDetail', { token: token(), submissionId: submissionId })
-    .then(function (res) {
-      busy(false);
-      if (handleAuthFail(res)) return;
-      if (!res.ok) { alert(res.message || '載入失敗'); return; }
-      CURRENT = LIST.filter(function (x) { return x.submissionId === submissionId; })[0];
-      renderDetail(res.record);
-      document.getElementById('mNote').value = CURRENT ? CURRENT.reviewNote : '';
-      document.getElementById('modal').classList.add('show');
-    })
-    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('show');
-  CURRENT = null;
-}
-
-
-/* ── 刪除 ─────────────────────────────── */
-/* 列表的「🗑️ 刪除」與詳細視窗的刪除按鈕，走的是同一個確認視窗 */
-
-let DEL_TARGET = null;
-
-function bindDelete() {
-  const input = document.getElementById('delConfirm');
-  const btn = document.getElementById('btnDelete');
-
-  input.oninput = function () {
-    const want = DEL_TARGET ? DEL_TARGET.code.toUpperCase() : '';
-    btn.disabled = input.value.trim().toUpperCase() !== want;
-  };
-  input.onkeydown = function (e) {
-    if (e.key === 'Enter' && !btn.disabled) doDelete();
-  };
-  btn.onclick = doDelete;
-
-  document.getElementById('btnOpenDelete').onclick = function () {
-    const id = CURRENT ? CURRENT.submissionId : null;
-    closeModal();
-    if (id) openDelete(id);
-  };
-}
-
-function openDelete(submissionId) {
-  const rec = LIST.filter(function (x) { return x.submissionId === submissionId; })[0];
-  if (!rec) { alert('找不到這筆資料，請先按「重新整理」。'); return; }
-  DEL_TARGET = rec;
-
-  document.getElementById('delSummary').innerHTML =
-    '<strong>' + escapeHtml(rec.name) + '</strong>（' + escapeHtml(gradYearLabel(rec.gradYear, true)) +
-    ' · 編號 ' + escapeHtml(rec.code) + '）<br>' +
-    '校系 ' + rec.counts.adm + ' 筆　口試 ' + rec.counts.itv + ' 題　術科 ' +
-    rec.counts.prc + ' 項　相片 ' + rec.counts.file + ' 張' +
-    (rec.reviewStatus === '通過' ? '<br>⚠️ 這筆<strong>已審核通過</strong>，刪除前請再確認。' : '');
-
-  document.getElementById('delCode').textContent = rec.code;
-  document.getElementById('delConfirm').value = '';
-  document.getElementById('btnDelete').disabled = true;
-  document.getElementById('delModal').classList.add('show');
-  setTimeout(function () { document.getElementById('delConfirm').focus(); }, 50);
-}
-
-function closeDelModal() {
-  document.getElementById('delModal').classList.remove('show');
-  document.getElementById('delConfirm').value = '';
-  document.getElementById('btnDelete').disabled = true;
-  DEL_TARGET = null;
-}
-
-function doDelete() {
-  if (!DEL_TARGET) return;
-  const code = document.getElementById('delConfirm').value.trim().toUpperCase();
-
-  if (!confirm('最後確認：即將刪除「' + DEL_TARGET.name + '」（編號 ' + DEL_TARGET.code +
-               '）的所有資料。\n\n五張分頁的對應列都會被刪除，此操作無法從網頁復原。\n\n確定要刪除嗎？')) {
-    return;
-  }
-
-  busy(true, '刪除中…');
-  api('adminDelete', {
-    token: token(), submissionId: DEL_TARGET.submissionId, confirmCode: code
-  })
-    .then(function (res) {
-      busy(false);
-      if (handleAuthFail(res)) return;
-      if (!res.ok) { alert(res.message || '刪除失敗'); return; }
-      closeDelModal();
-      showBanner('#msgBox', res.message, 'ok');
-      load(true);
-    })
-    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
-}
-
-function kv(pairs) {
-  return '<dl class="kv">' + pairs.filter(function (p) {
-    return String(p[1] || '').trim() !== '';
-  }).map(function (p) {
-    return '<dt>' + escapeHtml(p[0]) + '</dt><dd>' + escapeHtml(p[1]) + '</dd>';
-  }).join('') + '</dl>';
-}
-
-
-/* ── 可編輯欄位（教師修飾學生自述文字／修正亂填資料用）──── */
-/*
- * FIELD_VALUES 存目前值（不含 HTML 跳脫），編輯/取消時從這裡讀回。
- * FIELD_META 存每個欄位的輸入類型，決定編輯時要顯示文字框、下拉選單、
- * 複選框、還是單一勾選——不然像「公開層級」這種欄位若讓教師自由打字，
- * 打錯字或格式跟選項對不上，會讓 browse_() 的公開判斷邏輯直接失效。
- *
- *   textarea（預設）  多行文字，例：心得、建議
- *   input             單行文字，例：手機、IG/Line
- *   select            下拉選單，例：主要出路、報考群類、公開層級
- *   checkboxes        複選＋「其他」自訂文字，例：證照
- *   boolean           單一勾選，例：接受提問
- */
-let FIELD_VALUES = {};
-let FIELD_META = {};
-
-function efView(path) {
-  const meta = FIELD_META[path] || { type: 'textarea' };
-  const value = FIELD_VALUES[path];
-  if (meta.type === 'boolean') return value ? '是' : '否';
-  return value ? escapeHtml(value).replace(/\n/g, '<br>') : '<span class="ef-empty">（空白）</span>';
-}
-
-function ef(path, label, value, meta) {
-  FIELD_VALUES[path] = meta && meta.type === 'boolean' ? !!value : (value || '');
-  FIELD_META[path] = meta || { type: 'textarea' };
-  return '<div class="ef" data-path="' + escapeHtml(path) + '">' +
-    '<div class="ef-head"><span>' + escapeHtml(label) + '</span>' +
-    '<button type="button" class="btn-sm ef-edit" data-path="' + escapeHtml(path) + '">✏️ 編輯</button></div>' +
-    '<div class="ef-view">' + efView(path) + '</div>' +
-  '</div>';
-}
-
-/** 下拉選單用：主要出路、報考群類、公開層級這類跟固定選項對應的欄位 */
-function efSelect(path, label, value, options, placeholder) {
-  return ef(path, label, value, { type: 'select', options: options, placeholder: placeholder || '（未選擇）' });
-}
-/** 複選＋其他自訂文字用：目前只有證照 */
-function efCheckboxes(path, label, value, options) {
-  return ef(path, label, value, { type: 'checkboxes', options: options });
-}
-/** 單一勾選用：目前只有接受提問 */
-function efBoolean(path, label, value) {
-  return ef(path, label, value, { type: 'boolean' });
-}
-/** 單行文字用：手機、IG/Line、班級、座號、最終落點這類短文字 */
-function efInput(path, label, value) {
-  return ef(path, label, value, { type: 'input' });
-}
-
-function bindEditableFields() {
-  const body = document.getElementById('mBody');
-
-  body.addEventListener('click', function (e) {
-    const editBtn = e.target.closest('.ef-edit');
-    if (editBtn) { startEditField(editBtn.dataset.path); return; }
-    const saveBtn = e.target.closest('.ef-save');
-    if (saveBtn) { saveEditField(saveBtn.dataset.path); return; }
-    const cancelBtn = e.target.closest('.ef-cancel');
-    if (cancelBtn) { renderFieldView(cancelBtn.dataset.path); return; }
-  });
-}
-
-function startEditField(path) {
-  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
-  if (!box) return;
-  const meta = FIELD_META[path] || { type: 'textarea' };
-  const value = FIELD_VALUES[path];
-
-  let inner;
-  if (meta.type === 'select') {
-    const known = meta.options.indexOf(value) >= 0;
-    inner = '<select class="ef-select">' +
-      '<option value="">' + escapeHtml(meta.placeholder) + '</option>' +
-      meta.options.map(function (o) {
-        return '<option value="' + escapeHtml(o) + '"' + (o === value ? ' selected' : '') + '>' +
-               escapeHtml(o) + '</option>';
-      }).join('') +
-      // 保留舊資料裡不在目前選項清單中的值（例如已下架的公開層級選項），
-      // 不然一打開編輯器，沒動作就存檔也會把舊值換成清單裡隨便一個
-      (value && !known ? '<option value="' + escapeHtml(value) + '" selected>' +
-        escapeHtml(value) + '（舊值，已不在選項中）</option>' : '') +
-      '</select>';
-
-  } else if (meta.type === 'checkboxes') {
-    const picked = value ? splitList_client(value) : [];
-    const other = picked.filter(function (p) { return meta.options.indexOf(p) < 0; });
-    inner = '<div class="ef-chk-group">' + meta.options.map(function (o) {
-      return '<label><input type="checkbox" value="' + escapeHtml(o) + '"' +
-        (picked.indexOf(o) >= 0 ? ' checked' : '') + '> ' + escapeHtml(o) + '</label>';
-    }).join('') + '</div>' +
-    '<input type="text" class="ef-textinput ef-other" placeholder="其他（用頓號分隔）" value="' +
-      escapeHtml(other.join('、')) + '">';
-
-  } else if (meta.type === 'boolean') {
-    inner = '<label style="display:flex;align-items:center;gap:6px;font-size:14px">' +
-      '<input type="checkbox" class="ef-boolean"' + (value ? ' checked' : '') + '> 是</label>';
-
-  } else if (meta.type === 'input') {
-    inner = '<input type="text" class="ef-textinput" value="' + escapeHtml(value || '') + '">';
-
-  } else {
-    inner = '<textarea class="ef-textarea" rows="4">' + escapeHtml(value || '') + '</textarea>';
-  }
-
-  box.querySelector('.ef-view').outerHTML =
-    '<div class="ef-editing">' + inner +
-      '<div class="ef-actions">' +
-        '<button type="button" class="btn-sm ok ef-save" data-path="' + escapeHtml(path) + '">💾 儲存</button>' +
-        '<button type="button" class="btn-sm ef-cancel" data-path="' + escapeHtml(path) + '">取消</button>' +
-      '</div>' +
-    '</div>';
-
-  const focusEl = box.querySelector('.ef-textarea, .ef-select, .ef-textinput, .ef-boolean');
-  if (focusEl) {
-    focusEl.focus();
-    // setSelectionRange 這個方法在 <input type=checkbox> 上也「存在」（繼承自
-    // HTMLInputElement），但呼叫下去會直接拋 InvalidStateError——用型態判斷，
-    // 不能只檢查方法存不存在。
-    const isTextLike = focusEl.tagName === 'TEXTAREA' ||
-      (focusEl.tagName === 'INPUT' && focusEl.type === 'text');
-    if (isTextLike && focusEl.value) focusEl.setSelectionRange(focusEl.value.length, focusEl.value.length);
-  }
-}
-
-function renderFieldView(path) {
-  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
-  if (!box) return;
-  box.querySelector('.ef-editing').outerHTML = '<div class="ef-view">' + efView(path) + '</div>';
-}
-
-/** 從編輯中的欄位讀出目前輸入的值；boolean 回傳布林，其餘回傳字串 */
-function collectEditValue(path) {
-  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
-  const meta = FIELD_META[path] || { type: 'textarea' };
-
-  if (meta.type === 'select') return box.querySelector('.ef-select').value;
-  if (meta.type === 'boolean') return box.querySelector('.ef-boolean').checked;
-  if (meta.type === 'input') return box.querySelector('.ef-textinput').value;
-  if (meta.type === 'checkboxes') {
-    const picked = Array.from(box.querySelectorAll('.ef-chk-group input:checked')).map(function (i) { return i.value; });
-    const other = box.querySelector('.ef-other').value.trim();
-    if (other) Array.prototype.push.apply(picked, splitList_client(other));
-    return picked.join('、');
-  }
-  return box.querySelector('.ef-textarea').value;
-}
-
-function saveEditField(path) {
-  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
-  const meta = FIELD_META[path] || { type: 'textarea' };
-  const btn = box.querySelector('.ef-save');
-  const newValue = collectEditValue(path);
-
-  // willing_qa 這類布林欄位，Sheet 裡實際存的是 'V'/''（跟表單提交時的慣例一致）。
-  // adminEditField_ 是把送來的值原樣寫進儲存格，不會像 submitForm 那樣自動轉換，
-  // 所以這裡要自己轉成同樣的字面值，不然 toBool_() 在別處讀出來會不合預期。
-  const sendValue = meta.type === 'boolean' ? (newValue ? 'V' : '') : newValue;
-
-  btn.disabled = true;
-  btn.textContent = '儲存中…';
-
-  api('adminEditField', {
-    token: token(), submissionId: CURRENT.submissionId, path: path, value: sendValue
-  })
-    .then(function (res) {
-      if (handleAuthFail(res)) return;
+      hideOverlay();
       if (!res.ok) {
-        alert(res.message || '儲存失敗');
-        btn.disabled = false; btn.textContent = '💾 儲存';
+        if (/登入已逾時|權限不足|重新登入/.test(res.message || '')) {
+          clearSession();
+          location.href = pageUrl('login') + '?role=student';
+          return;
+        }
+        showMsg(res.message || '載入失敗。', 'err');
         return;
       }
-      FIELD_VALUES[path] = newValue;
-      renderFieldView(path);
-      showBanner('#msgBox', res.unchanged ? '內容沒有變化。' : '已儲存修改：' + path, 'ok');
+
+      EDIT_LOCKED = !!res.locked;
+
+      // 套用既有資料
+      setFields(document, 'm', res.record.main || {});
+      $$('.adm-card').forEach(function (c) { c.remove(); });
+      (res.record.admissions || []).forEach(function (a) { addAdmission(a); });
+      if (!$$('.adm-card').length) addAdmission();
+
+      renderEditHeader(res);
+      updateProgress();
+      updateSubmitState();
     })
     .catch(function (e) {
-      alert('連線失敗：' + e);
-      btn.disabled = false; btn.textContent = '💾 儲存';
+      hideOverlay();
+      showMsg('連線失敗：' + (e && e.message ? e.message : e), 'err');
     });
 }
 
-/** 跟表單前端一致的分隔規則：頓號／逗號／全形逗號都當分隔符 */
-function splitList_client(s) {
-  return String(s || '').split(/[、,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
+/** 編輯模式的頁面提示：審核狀態、退件意見、鎖定狀態 */
+function renderEditHeader(res) {
+  const main = document.querySelector('main');
+  const box = document.createElement('div');
+  const status = res.reviewStatus || '待審';
+
+  if (EDIT_LOCKED) {
+    box.className = 'hint warn';
+    box.innerHTML = '<strong>🔒 這筆資料已通過老師審核，目前為唯讀狀態</strong><br>' +
+      '你可以檢視內容，但無法修改。如需更正，請聯絡科上老師。' +
+      (res.reviewNote ? '<br><br><strong>老師的意見：</strong>' + escapeHtml(res.reviewNote) : '');
+  } else if (status === '退回修改') {
+    box.className = 'hint warn';
+    box.innerHTML = '<strong>↩ 老師請你修改後重新送出</strong><br>' +
+      '<strong>審核意見：</strong>' + escapeHtml(res.reviewNote || '（未填寫）') +
+      '<br>修改完按最下方的「儲存修改」即可，狀態會自動回到待審。';
+  } else {
+    box.className = 'hint';
+    box.innerHTML = '<strong>✏️ 修改模式</strong>　目前審核狀態：<strong>' +
+      escapeHtml(status) + '</strong><br>' +
+      '改完請按最下方的「儲存修改」。老師審核通過之後就不能再改了。';
+  }
+  main.insertBefore(box, main.firstChild);
+
+  document.querySelector('header.top h1').textContent = '修改我的升學資料';
+
+  if (EDIT_LOCKED) {
+    // 唯讀：鎖住所有輸入元件與動態按鈕
+    $$('input, select, textarea').forEach(function (el) { el.disabled = true; });
+    $$('.btn-add, .btn-del, .file-drop').forEach(function (el) {
+      el.style.display = 'none';
+    });
+    $('#btnSubmit').style.display = 'none';
+    $('#btnClearDraft').style.display = 'none';
+    $('#draftInfo').textContent = '唯讀模式，不會儲存草稿';
+  } else {
+    $('#btnSubmit').textContent = '儲存修改';
+    $('#btnClearDraft').style.display = 'none';
+    $('#draftInfo').textContent = '修改模式不使用草稿，請直接按「儲存修改」';
+  }
 }
 
-/** querySelector 用的簡易跳脫（避免 path 裡的特殊字元弄壞選擇器） */
-function cssEscape(s) {
-  return String(s).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
+
+/* ── 選項填充 ─────────────────────────────────────────── */
+/** 回傳 { values:[實際存入的值], labels:[畫面顯示文字] } */
+function optionListOf(key) {
+  if (key === '__GRAD_YEARS') {
+    return { values: CFG.gradYears.slice(), labels: CFG.gradYears.map(y => gradYearLabel(y)) };
+  }
+  if (key === '__DIFFICULTY') {
+    return { values: ['1', '2', '3', '4', '5'], labels: DIFFICULTY };
+  }
+  const arr = CFG.options[key] || [];
+  return { values: arr, labels: arr };
 }
 
+function fillOptions(root) {
+  $$('[data-fill]', root).forEach(function (el) {
+    if (el.dataset.filled === '1') return;
+    el.dataset.filled = '1';
 
-/* ── 修改紀錄 ─────────────────────────── */
+    const type = el.dataset.type;
+    const opt = optionListOf(el.dataset.fill);
+    const values = opt.values;
+    const list = opt.labels;
 
-function openEditHistory() {
-  if (!CURRENT) return;
-  api('adminEditHistory', { token: token(), submissionId: CURRENT.submissionId })
-    .then(function (res) {
-      if (handleAuthFail(res)) return;
-      if (!res.ok) { alert(res.message || '載入失敗'); return; }
-      if (!res.edits.length) { alert('這筆資料還沒有任何修改紀錄。'); return; }
-
-      const text = res.edits.map(function (e) {
-        return '【' + e.at.replace('T', ' ').slice(0, 16) + '】' + e.editor + ' 修改了 ' + e.path +
-               '\n原文：' + (e.oldValue || '（空）') +
-               '\n改為：' + (e.newValue || '（空）');
-      }).join('\n\n');
-      alert('修改紀錄（' + res.edits.length + ' 筆，最新在前）\n\n' + text);
-    })
-    .catch(function (e) { alert('連線失敗：' + e); });
-}
-
-function renderDetail(rec) {
-  const m = rec.main;
-  document.getElementById('mTitle').textContent =
-    m.name + '（' + gradYearLabel(m.grad_year, true) + ' · 編號 ' +
-    String(m.submission_id).substring(0, 6).toUpperCase() + '）';
-
-  FIELD_VALUES = {};
-  let html = '';
-
-  html += '<div class="detail-sec"><h4>基本資料</h4>' + kv([
-    ['Email（登入憑證，不開放編輯）', m.email],
-    ['統測總分', m.tve_total], ['班排', m.rank_pct],
-    ['願意回校分享', m.willing_share ? '是' : '']
-  ]) +
-  '<div class="grid2">' +
-    efInput('main.class_name', '班級', m.class_name) +
-    efInput('main.seat_no', '座號', m.seat_no) +
-  '</div>' +
-  '<div class="grid2">' +
-    efInput('main.phone', '手機', m.phone) +
-    efInput('main.social_id', 'IG/Line', m.social_id) +
-  '</div>' +
-  efInput('main.current_place', '最終落點', m.current_place) +
-  '<div class="grid2">' +
-    efSelect('main.main_path', '主要出路', m.main_path, CFG.options.MAIN_PATHS) +
-    efSelect('main.exam_group', '報考群類', m.exam_group, CFG.options.EXAM_GROUPS) +
-  '</div>' +
-  efCheckboxes('main.certificates', '證照', (m.certificates || []).join('、'), CFG.options.CERTIFICATES) +
-  efSelect('main.publish_level', '公開層級', m.publish_level, CFG.options.PUBLISH_LEVELS) +
-  efBoolean('main.willing_qa', '接受提問', m.willing_qa) +
-  ef('main.experiences', '競賽/專題經歷', m.experiences) +
-  ef('main.activities', '幹部/社團/志工', m.activities) +
-  '</div>';
-
-  (rec.admissions || []).forEach(function (a, i) {
-    html += '<div class="detail-sec"><h4>志願 ' + (i + 1) + '：' +
-      escapeHtml(a.univ + ' ' + a.major) + (a.is_enrolled ? '　★最終就讀' : '') + '</h4>' +
-      kv([
-        ['招生管道', a.channel], ['一階', a.stage1_result],
-        ['二階項目', (a.stage2_items || []).join('、')],
-        ['二階成績', a.stage2_score],
-        ['結果', String(a.final_result || '') + String(a.result_rank || '')],
-        ['面試形式', a.itv_format], ['教授人數', a.itv_prof_count],
-        ['時間', a.itv_duration_min], ['流程', a.itv_flow]
-      ]);
-
-    if ((a.interviews || []).length) {
-      html += '<div style="margin-top:8px"><b style="font-size:13px">口試題目 ' +
-        a.interviews.length + ' 題</b>';
-      a.interviews.forEach(function (q, qi) {
-        const p = 'itv.' + (i + 1) + '.' + (qi + 1) + '.';
-        html += '<div class="q-card" style="margin:6px 0">' +
-          '<div class="q-meta">' + (q.categories || []).map(function (c) {
-            return '<span class="tag warn">' + escapeHtml(c) + '</span>';
-          }).join('') + (q.difficulty ? '<span>難度 ' + escapeHtml(q.difficulty) + '</span>' : '') + '</div>' +
-          ef(p + 'question', '第 ' + (qi + 1) + ' 題', q.question) +
-          ef(p + 'my_answer', '當時回答', q.my_answer) +
-          ef(p + 'better_answer', '回頭看該怎麼答', q.better_answer) +
-          ef(p + 'tip', '給學弟妹的提醒', q.tip) +
-        '</div>';
+    if (type === 'select') {
+      const ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = el.dataset.placeholder || '請選擇';
+      el.appendChild(ph);
+      list.forEach(function (label, i) {
+        const o = document.createElement('option');
+        o.value = values[i];
+        o.textContent = label;
+        el.appendChild(o);
       });
-      html += '</div>';
+    } else if (type === 'radio' || type === 'checkbox') {
+      const name = 'g' + (++radioSeq);
+      list.forEach(function (label, i) {
+        const lb = document.createElement('label');
+        const ip = document.createElement('input');
+        ip.type = type;
+        if (type === 'radio') ip.name = name;
+        ip.value = values[i];
+        lb.appendChild(ip);
+        lb.appendChild(document.createTextNode(' ' + label));
+        el.appendChild(lb);
+      });
     }
+  });
+}
 
-    (a.practicals || []).forEach(function (p, pi) {
-      const pp = 'prc.' + (i + 1) + '.' + (pi + 1) + '.';
-      html += '<div class="q-card" style="margin:6px 0">' +
-        '<div class="q-meta"><span class="tag">' + escapeHtml(p.subject || '術科') + '</span>' +
-        (p.duration_min ? '<span>' + escapeHtml(p.duration_min) + ' 分</span>' : '') + '</div>' +
-        ef(pp + 'content', '題目內容', p.content) +
-        ef(pp + 'equipment', '現場提供的設備/工具', p.equipment) +
-        ef(pp + 'prep_advice', '準備方式建議', p.prep_advice) +
-        ((p.existingFiles || []).length ? '<div class="q-extra"><b>相片：</b>' +
-          p.existingFiles.map(function (f) {
-            return '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener">' +
-                   escapeHtml(f.name) + '</a>';
-          }).join('　') + '</div>' : '') +
-      '</div>';
-    });
 
-    html += '</div>';
+/** 示範模式時在頁面最上方掛一條警告，避免有人以為自己真的填完了 */
+function showModeBanner() {
+  if (runMode() !== 'demo') return;
+  const div = document.createElement('div');
+  div.className = 'hint warn';
+  div.style.marginBottom = '16px';
+  div.innerHTML = '<strong>⚠️ 這是介面示範版</strong><br>' +
+    '你可以完整操作、上傳相片、體驗整個流程，但按下送出<strong>不會寫入任何資料</strong>，' +
+    '也不會寄出任何信件。正式版請使用學校提供的填寫連結。';
+  const main = document.querySelector('main');
+  main.insertBefore(div, main.firstChild);
+}
+
+
+/* ── 事件 ─────────────────────────────────────────────── */
+function bindGlobalEvents() {
+  $('#btnAddAdm').addEventListener('click', function () { addAdmission(); });
+  $('#btnSubmit').addEventListener('click', onSubmit);
+  $('#btnClearDraft').addEventListener('click', clearDraft);
+
+  $('#chkPdpa').addEventListener('change', updateSubmitState);
+
+  document.addEventListener('input', onAnyChange);
+  document.addEventListener('change', onAnyChange);
+
+  // 動態卡片內的按鈕（事件委派）
+  $('#admList').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    const card = btn.closest('.adm-card');
+
+    if (act === 'del-adm') {
+      if (confirm('確定要刪除這個校系？裡面的口試題目與術科資料也會一起刪除。')) {
+        card.remove();
+        renumberAdmissions();
+        markDirty();
+      }
+    } else if (act === 'add-q') {
+      addQuestion(card);
+    } else if (act === 'add-p') {
+      addPractical(card);
+    } else if (act === 'del-q') {
+      btn.closest('.q-item').remove();
+      renumberSub(card, '.q-item', '.q-no');
+      markDirty();
+    } else if (act === 'del-p') {
+      btn.closest('.p-item').remove();
+      renumberSub(card, '.p-item', '.p-no');
+      markDirty();
+    }
   });
 
-  html += '<div class="detail-sec"><h4>備審與心得</h4>' + kv([
-    ['備審頁數', m.portfolio_pages], ['製作工具', m.portfolio_tool],
-    ['花費時數', m.portfolio_hours], ['面試問到備審', m.portfolio_asked]
-  ]) +
-  ef('main.portfolio_focus', '備審重點', m.portfolio_focus) +
-  ef('main.reflection', '整體心得', m.reflection) +
-  ef('main.advice_1', '建議 1', m.advice_1) +
-  ef('main.advice_2', '建議 2', m.advice_2) +
-  ef('main.advice_3', '建議 3', m.advice_3) +
-  ef('main.do_earlier', '高一高二該先做什麼', m.do_earlier) +
-  ef('main.regret', '最後悔沒做的事', m.regret) +
-  '</div>';
+  $('#admList').addEventListener('change', function (e) {
+    if (e.target.classList.contains('file-input')) handleFilePick(e.target);
+  });
 
-  document.getElementById('mBody').innerHTML = html;
+  window.addEventListener('beforeunload', function (e) {
+    if (document.body.dataset.submitted === '1') return;
+    if (!hasAnyInput()) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
 }
 
-function doReview(status) {
-  if (!CURRENT) return;
-  const note = document.getElementById('mNote').value.trim();
-
-  if (status === '退回修改' && !note) {
-    alert('退回修改請填寫審核意見，學生才知道要改什麼（這段文字會寄給他）。');
-    return;
-  }
-  if (status === '通過' &&
-      !confirm('審核通過後，這位畢業生就無法再自行修改資料了。確定要通過嗎？')) {
-    return;
-  }
-
-  busy(true, '儲存審核結果…');
-  api('adminReview', {
-    token: token(), submissionId: CURRENT.submissionId, status: status, note: note
-  })
-    .then(function (res) {
-      busy(false);
-      if (handleAuthFail(res)) return;
-      if (!res.ok) { alert(res.message || '審核失敗'); return; }
-      closeModal();
-      showBanner('#msgBox', res.message, 'ok');
-      load(true);
-    })
-    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
+function onAnyChange() {
+  if (document.body.dataset.submitted === '1') return;
+  updateProgress();
+  updateSubmitState();
+  markDirty();
 }
 
 
-/* ── 匯出 ─────────────────────────────── */
+/* ── 動態卡片 ─────────────────────────────────────────── */
+function addAdmission(data) {
+  const list = $('#admList');
+  if ($$('.adm-card', list).length >= CFG.maxAdmissions) {
+    alert('最多只能填 ' + CFG.maxAdmissions + ' 個校系。');
+    return null;
+  }
+  const node = $('#tpl-admission').content.cloneNode(true);
+  const card = node.querySelector('.adm-card');
+  list.appendChild(node);
+  fillOptions(card);
+  renumberAdmissions();
+  updateAddBtn();
 
-function doExport() {
-  const sheet = document.getElementById('expSheet').value;
-  const onlyApproved = document.getElementById('expApproved').checked;
+  if (data) {
+    setFields(card.querySelector('.adm-fields'), 'a', data);
+    (data.interviews || []).forEach(q => addQuestion(card, q));
+    (data.practicals || []).forEach(p => addPractical(card, p));
+  }
+  return card;
+}
 
-  busy(true, '產生 CSV…');
-  api('adminExport', { token: token(), sheet: sheet, onlyApproved: onlyApproved })
-    .then(function (res) {
-      busy(false);
-      if (handleAuthFail(res)) return;
-      if (!res.ok) { alert(res.message || '匯出失敗'); return; }
+function addQuestion(card, data) {
+  const node = $('#tpl-question').content.cloneNode(true);
+  const item = node.querySelector('.q-item');
+  card.querySelector('.q-list').appendChild(node);
+  fillOptions(item);
+  renumberSub(card, '.q-item', '.q-no');
+  if (data) setFields(item, 'q', data);
+  markDirty();
+  return item;
+}
 
-      const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+function addPractical(card, data) {
+  const node = $('#tpl-practical').content.cloneNode(true);
+  const item = node.querySelector('.p-item');
+  card.querySelector('.p-list').appendChild(node);
+  fillOptions(item);
+  item.querySelector('.max-files').textContent = CFG.maxFilesPerPractical;
+  item._files = [];
+  item._existing = [];
+  renumberSub(card, '.p-item', '.p-no');
+  if (data) {
+    setFields(item, 'p', data);
+    // 編輯模式：把已經存在雲端的相片列出來，讓使用者可以個別移除
+    item._existing = (data.existingFiles || []).slice();
+    renderExisting(item);
+  }
+  markDirty();
+  return item;
+}
 
-      showBanner('#msgBox', '已匯出 ' + res.rowCount + ' 筆到 ' + res.filename, 'ok');
+/** 已上傳過的相片（只有連結，沒有縮圖資料）*/
+function renderExisting(item) {
+  let box = item.querySelector('.existing-files');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'existing-files';
+    box.style.marginBottom = '8px';
+    const thumbs = item.querySelector('.thumbs');
+    thumbs.parentNode.insertBefore(box, thumbs);
+  }
+  if (!item._existing.length) { box.innerHTML = ''; return; }
+
+  box.innerHTML = '<div style="font-size:13px;color:#6b7a8c;margin-bottom:5px">' +
+    '已上傳的相片（' + item._existing.length + '）</div>' +
+    item._existing.map(function (f, i) {
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+        '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener" ' +
+        'style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📷 ' +
+        escapeHtml(f.name) + '</a>' +
+        (EDIT_LOCKED ? '' :
+          '<button type="button" class="btn-del" data-rm-existing="' + i + '">移除</button>') +
+        '</div>';
+    }).join('');
+
+  box.querySelectorAll('[data-rm-existing]').forEach(function (btn) {
+    btn.onclick = function () {
+      const i = Number(btn.dataset.rmExisting);
+      if (!confirm('確定要移除「' + item._existing[i].name + '」？儲存後就不會再顯示在資料裡。')) return;
+      item._existing.splice(i, 1);
+      renderExisting(item);
+      markDirty();
+    };
+  });
+}
+
+function renumberAdmissions() {
+  $$('.adm-card').forEach(function (c, i) {
+    c.querySelector('.adm-no').textContent = String(i + 1);
+  });
+  updateAddBtn();
+}
+
+function renumberSub(card, itemSel, noSel) {
+  $$(itemSel, card).forEach(function (el, i) {
+    const n = el.querySelector(noSel);
+    if (n) n.textContent = String(i + 1);
+  });
+}
+
+function updateAddBtn() {
+  const n = $$('.adm-card').length;
+  const btn = $('#btnAddAdm');
+  btn.disabled = n >= CFG.maxAdmissions;
+  btn.textContent = btn.disabled
+    ? '已達 ' + CFG.maxAdmissions + ' 個校系上限'
+    : '＋ 新增校系（目前 ' + n + ' 個）';
+}
+
+
+/* ── 相片 ─────────────────────────────────────────────── */
+function handleFilePick(input) {
+  const item = input.closest('.p-item');
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+
+  const room = CFG.maxFilesPerPractical - item._files.length;
+  if (room <= 0) {
+    alert('這個術科項目最多 ' + CFG.maxFilesPerPractical + ' 張相片。');
+    return;
+  }
+  const picked = files.slice(0, room);
+  if (files.length > room) alert('只會加入前 ' + room + ' 張（每項上限 ' + CFG.maxFilesPerPractical + ' 張）。');
+
+  showOverlay('壓縮相片中…', '共 ' + picked.length + ' 張，請稍候');
+
+  Promise.all(picked.map(compressImage))
+    .then(function (results) {
+      const totalNow = totalFileCount();
+      if (totalNow + results.length > CFG.maxFilesTotal) {
+        throw new Error('整份表單最多 ' + CFG.maxFilesTotal + ' 張相片。');
+      }
+      const bytesNow = totalFileBytes() + results.reduce((s, r) => s + r.size, 0);
+      if (bytesNow > CFG.maxTotalBytes) {
+        throw new Error('相片總容量會超過 ' + Math.round(CFG.maxTotalBytes / 1048576) +
+                        ' MB 上限，請減少張數或改拍解析度低一點的照片。');
+      }
+      results.forEach(r => item._files.push(r));
+      renderThumbs(item);
+      hideOverlay();
     })
-    .catch(function (e) { busy(false); alert('連線失敗：' + e); });
+    .catch(function (err) {
+      hideOverlay();
+      alert(err.message || String(err));
+    });
+}
+
+function compressImage(file) {
+  return new Promise(function (resolve, reject) {
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name)) {
+      reject(new Error('「' + file.name + '」不是圖片檔。'));
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const max = CFG.imageMaxEdge;
+      if (Math.max(w, h) > max) {
+        const r = max / Math.max(w, h);
+        w = Math.round(w * r); h = Math.round(h * r);
+      }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = cv.toDataURL('image/jpeg', CFG.imageQuality);
+      const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+      resolve({
+        name: file.name,
+        mimeType: 'image/jpeg',
+        data: base64,
+        size: Math.floor(base64.length * 3 / 4),
+        preview: dataUrl
+      });
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      reject(new Error('無法讀取「' + file.name + '」。若是 iPhone 拍的 HEIC 檔，' +
+                       '請到「設定 → 相機 → 格式」改為「最相容」後重拍，或先另存成 JPG。'));
+    };
+    img.src = url;
+  });
+}
+
+function renderThumbs(item) {
+  const box = item.querySelector('.thumbs');
+  box.innerHTML = '';
+  item._files.forEach(function (f, i) {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    const im = document.createElement('img');
+    im.src = f.preview;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'x';
+    x.textContent = '×';
+    x.onclick = function () {
+      item._files.splice(i, 1);
+      renderThumbs(item);
+      markDirty();
+    };
+    const sz = document.createElement('div');
+    sz.className = 'sz';
+    sz.textContent = Math.round(f.size / 1024) + ' KB';
+    d.appendChild(im); d.appendChild(x); d.appendChild(sz);
+    box.appendChild(d);
+  });
+  markDirty();
+}
+
+function totalFileCount() {
+  return $$('.p-item').reduce((s, el) => s + ((el._files || []).length), 0);
+}
+function totalFileBytes() {
+  return $$('.p-item').reduce((s, el) =>
+    s + (el._files || []).reduce((a, f) => a + f.size, 0), 0);
+}
+
+
+/* ── 讀寫欄位 ─────────────────────────────────────────── */
+function readFields(scope, attr) {
+  const out = {};
+  $$('[data-' + attr + ']', scope).forEach(function (el) {
+    const key = el.dataset[attr];
+    if (el.classList.contains('chk-group') || el.classList.contains('radio-col')) {
+      if (el.dataset.type === 'radio') {
+        const c = el.querySelector('input:checked');
+        out[key] = c ? c.value : '';
+      } else {
+        out[key] = $$('input:checked', el).map(i => i.value);
+      }
+    } else if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      out[key] = el.checked;
+    } else {
+      out[key] = el.value;
+    }
+  });
+  // 「其他」自由填寫，附加到對應的複選清單
+  $$('[data-other-for]', scope).forEach(function (el) {
+    const key = el.dataset.otherFor;
+    const extra = String(el.value || '').trim();
+    if (extra && Array.isArray(out[key])) out[key] = out[key].concat(extra.split(/[、,，]/).map(s => s.trim()).filter(Boolean));
+    if (extra) out['__other_' + key] = extra;
+  });
+  return out;
+}
+
+function setFields(scope, attr, data) {
+  $$('[data-' + attr + ']', scope).forEach(function (el) {
+    const key = el.dataset[attr];
+    const v = data[key];
+    if (v === undefined) return;
+    if (el.classList.contains('chk-group') || el.classList.contains('radio-col')) {
+      if (el.dataset.type === 'radio') {
+        $$('input', el).forEach(i => { i.checked = (i.value === v); });
+      } else {
+        const arr = Array.isArray(v) ? v : [];
+        $$('input', el).forEach(i => { i.checked = arr.indexOf(i.value) >= 0; });
+      }
+    } else if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      el.checked = !!v;
+    } else {
+      el.value = v;
+    }
+  });
+  $$('[data-other-for]', scope).forEach(function (el) {
+    const v = data['__other_' + el.dataset.otherFor];
+    if (v !== undefined) el.value = v;
+  });
+}
+
+
+/* ── 收集整份表單 ─────────────────────────────────────── */
+function collect(includeFiles) {
+  const main = readFields(document, 'm');
+
+  const admissions = $$('.adm-card').map(function (card) {
+    const a = readFields(card.querySelector('.adm-fields'), 'a');
+
+    a.interviews = $$('.q-item', card).map(function (q) {
+      return readFields(q, 'q');
+    }).filter(q => String(q.question || '').trim());
+
+    a.practicals = $$('.p-item', card).map(function (p) {
+      const o = readFields(p, 'p');
+      const cat = o.file_category || '術科題目';
+      if (includeFiles) {
+        o.files = (p._files || []).map(f => ({
+          name: f.name, mimeType: f.mimeType, data: f.data, category: cat
+        }));
+        // 編輯模式：告訴後端哪些既有相片要保留，沒列到的就會被移除
+        o.keptFiles = (p._existing || []).map(f => f.fileId);
+      }
+      return o;
+    }).filter(p => String(p.content || '').trim() || String(p.subject || '').trim() ||
+                   (includeFiles && ((p.files || []).length || (p.keptFiles || []).length)));
+
+    return a;
+  }).filter(a => String(a.univ || '').trim() || String(a.major || '').trim());
+
+  return { main: main, admissions: admissions };
+}
+
+
+/* ── 進度與送出狀態 ───────────────────────────────────── */
+const REQUIRED = [
+  { sel: '[data-m="grad_year"]', label: '畢業學年度' },
+  { sel: '[data-m="name"]', label: '姓名' },
+  { sel: '[data-m="email"]', label: '聯絡 Email' },
+  { sel: '[data-m="current_place"]', label: '目前就讀學校／服務單位' },
+  { sel: '[data-m="main_path"]', label: '主要出路' },
+  { sel: '[data-m="reflection"]', label: '整體心得' },
+  { sel: '[data-m="publish_level"]', label: '公開層級' }
+];
+
+function requiredFilled(item) {
+  const el = $(item.sel);
+  if (!el) return false;
+  if (el.classList.contains('radio-col')) return !!el.querySelector('input:checked');
+  return String(el.value || '').trim() !== '';
+}
+
+function updateProgress() {
+  let done = REQUIRED.filter(requiredFilled).length;
+  let total = REQUIRED.length + 2;
+  const adviceOk = ['advice_1', 'advice_2', 'advice_3']
+    .some(k => String(($('[data-m="' + k + '"]') || {}).value || '').trim());
+  if (adviceOk) done++;
+  if ($('#chkPdpa').checked) done++;
+
+  const pct = Math.round(done / total * 100);
+  $('#progFill').style.width = pct + '%';
+  $('#progText').textContent = '必填完成度 ' + pct + '%（' + done + '/' + total + '）';
+
+  const refl = $('[data-m="reflection"]').value.replace(/\s/g, '').length;
+  $('#reflCount').textContent = refl > 0
+    ? '目前 ' + refl + ' 字' + (refl < 200 ? '（建議 200 字以上）' : ' 👍')
+    : '建議 200 字以上';
+}
+
+function updateSubmitState() {
+  const btn = $('#btnSubmit');
+  if (!btn) return;
+  if (EDIT_LOCKED) { btn.style.display = 'none'; return; }
+
+  const ok = $('#chkPdpa').checked;
+  btn.disabled = !ok;
+  if (EDIT_MODE) {
+    btn.textContent = ok ? '儲存修改' : '請先勾選第 H 段的個資同意';
+  } else {
+    btn.textContent = ok ? '送出表單' : '請先勾選第 H 段的個資同意';
+  }
+}
+
+
+/* ── 前端驗證 ─────────────────────────────────────────── */
+function clientValidate(payload) {
+  $$('.invalid').forEach(el => el.classList.remove('invalid'));
+
+  for (let i = 0; i < REQUIRED.length; i++) {
+    if (!requiredFilled(REQUIRED[i])) {
+      return { msg: '「' + REQUIRED[i].label + '」還沒填。', sel: REQUIRED[i].sel };
+    }
+  }
+  const email = String(payload.main.email || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { msg: 'Email 格式看起來不正確，請再檢查一次。', sel: '[data-m="email"]' };
+  }
+  const adviceOk = ['advice_1', 'advice_2', 'advice_3']
+    .some(k => String(payload.main[k] || '').trim());
+  if (!adviceOk) {
+    return { msg: '「給學弟妹的建議」至少要填一則。', sel: '[data-m="advice_1"]' };
+  }
+  if (!payload.main.consent_pdpa) {
+    return { msg: '需要勾選個人資料蒐集同意才能送出。', sel: '#chkPdpa' };
+  }
+  for (let j = 0; j < payload.admissions.length; j++) {
+    const a = payload.admissions[j];
+    if (!String(a.univ || '').trim() || !String(a.major || '').trim()) {
+      return { msg: '第 ' + (j + 1) + ' 個志願的學校名稱與科系名稱都要填寫（不填的話請刪掉那張卡片）。' };
+    }
+  }
+  return null;
+}
+
+
+/* ── 送出 ─────────────────────────────────────────────── */
+function onSubmit() {
+  hideMsg();
+  const payload = collect(true);
+
+  const err = clientValidate(payload);
+  if (err) {
+    showMsg(err.msg, 'err');
+    if (err.sel) {
+      const el = $(err.sel);
+      if (el) {
+        el.classList.add('invalid');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    return;
+  }
+
+  const n = totalFileCount();
+  showOverlay(EDIT_MODE ? '儲存修改中…' : '資料傳送中…',
+    n ? '含 ' + n + ' 張新相片，可能需要 10～30 秒，請勿關閉頁面' : '請勿關閉頁面');
+  $('#btnSubmit').disabled = true;
+
+  callSubmit(payload, onSubmitDone, onSubmitFail);
+}
+
+/** 依模式決定要新增還是更新。demo 模式一律假裝成功 */
+function callSubmit(payload, onOk, onFail) {
+  if (runMode() === 'demo') {
+    setTimeout(function () { onOk({ ok: true, submissionId: 'DEMO01', demo: true }); }, 900);
+    return;
+  }
+
+  if (EDIT_MODE) {
+    const sess = getSession();
+    api('updateOwn', Object.assign({ token: sess ? sess.token : '' }, payload))
+      .then(onOk).catch(onFail);
+  } else {
+    api('submit', payload).then(onOk).catch(onFail);
+  }
+}
+
+function onSubmitDone(res) {
+  if (res && res.ok) {
+    document.body.dataset.submitted = '1';
+    clearTimeout(draftTimer);            // 取消排程中的自動存，否則草稿會被寫回去
+    if (!res.demo) clearDraftSilent();   // 示範模式保留草稿，方便繼續試
+    showSuccess(res.submissionId, !!res.demo);
+  } else {
+    hideOverlay();
+    $('#btnSubmit').disabled = false;
+    updateSubmitState();
+    showMsg((res && res.message) || '送出失敗，請稍後再試。', 'err');
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+}
+
+function onSubmitFail(e) {
+  hideOverlay();
+  $('#btnSubmit').disabled = false;
+  updateSubmitState();
+  showMsg('連線發生問題：' + (e && e.message ? e.message : e) +
+          '\n資料還留在頁面上，請檢查網路後再按一次送出。', 'err');
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function showSuccess(code, isDemo) {
+  $('#overlay').classList.remove('show');
+
+  if (EDIT_MODE && !isDemo) {
+    document.querySelector('main').innerHTML =
+      '<section class="card"><div class="card-body" style="text-align:center;padding:36px 20px">' +
+      '<div class="result-icon">💾</div>' +
+      '<h2 style="margin:0 0 6px;font-size:20px">修改已儲存</h2>' +
+      '<p style="color:#6b7a8c;font-size:14px">你的資料已更新，狀態回到「待審」等待老師審核。</p>' +
+      '<div class="result-code">' + escapeHtml(code) + '</div>' +
+      '<p style="font-size:14px;color:#6b7a8c">還要再修改的話，直接重新整理這個頁面即可。</p>' +
+      '<button type="button" class="btn-ghost" onclick="location.reload()">回到修改畫面</button>' +
+      '</div></section>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  const body = isDemo
+    ? '<div class="result-icon">🧪</div>' +
+      '<h2 style="margin:0 0 6px;font-size:20px">示範模式：流程走完了</h2>' +
+      '<p style="color:#6b7a8c;font-size:14px;margin:0">這次操作<strong>沒有</strong>寫入任何資料，也沒有寄信。</p>' +
+      '<div class="result-code">' + code + '</div>' +
+      '<p style="font-size:14px;color:#6b7a8c">正式版送出後，這裡會顯示你的真實提交編號。</p>' +
+      '<button type="button" class="btn-ghost" onclick="location.reload()">再試一次</button>'
+    : '<div class="result-icon">✅</div>' +
+      '<h2 style="margin:0 0 6px;font-size:20px">送出成功，謝謝你！</h2>' +
+      '<p style="color:#6b7a8c;font-size:14px;margin:0">你的經驗會成為學弟妹最實用的參考資料。</p>' +
+      '<div class="result-code">' + code + '</div>' +
+      '<p style="font-size:14px;color:#6b7a8c">這是你的提交編號，建議截圖保存。<br>' +
+      '確認信已寄到你填寫的 Email（可能會在垃圾郵件匣）。<br>' +
+      '資料需要修改的話，請帶著編號聯絡科上老師。</p>';
+
+  document.querySelector('main').innerHTML =
+    '<section class="card"><div class="card-body" style="text-align:center;padding:36px 20px">' +
+    body + '</div></section>';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+/* ── 訊息 / 遮罩 ──────────────────────────────────────── */
+function showMsg(text, kind) {
+  const b = $('#msgBox');
+  b.textContent = text;
+  b.className = 'msg-box ' + kind;
+}
+function hideMsg() { $('#msgBox').className = 'msg-box'; }
+
+function showOverlay(title, text) {
+  $('#ovTitle').textContent = title;
+  $('#ovText').textContent = text || '';
+  $('#overlay').classList.add('show');
+}
+function hideOverlay() { $('#overlay').classList.remove('show'); }
+
+
+/* ── 草稿 ─────────────────────────────────────────────── */
+function hasAnyInput() {
+  const d = collect(false);
+  return String(d.main.name || '').trim() !== '' ||
+         String(d.main.reflection || '').trim() !== '' ||
+         d.admissions.length > 0;
+}
+
+function markDirty() {
+  // 編輯模式改的是雲端既有資料，存草稿只會造成混淆
+  if (EDIT_MODE || document.body.dataset.submitted === '1') return;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(saveDraft, 1200);
+}
+
+function saveDraft() {
+  // 送出成功後畫面已被替換，這裡若還執行會拋錯，
+  // 而且會把剛清掉的草稿又寫回去，害學生下次開表單被問要不要還原
+  if (document.body.dataset.submitted === '1' || !$('#draftInfo')) return;
+  try {
+    const data = collect(false);   // 相片不存草稿（容量限制）
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ at: Date.now(), data: data }));
+    const t = new Date();
+    $('#draftInfo').textContent = '草稿已自動儲存 ' +
+      ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) +
+      '（相片不會存入草稿）';
+  } catch (e) {
+    $('#draftInfo').textContent = '草稿儲存失敗（瀏覽器空間不足）';
+  }
+}
+
+function restoreDraft() {
+  let raw;
+  try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) { return; }
+  if (!raw) return;
+
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { return; }
+  if (!parsed || !parsed.data) return;
+
+  const when = new Date(parsed.at);
+  const label = when.getMonth() + 1 + '/' + when.getDate() + ' ' +
+                ('0' + when.getHours()).slice(-2) + ':' + ('0' + when.getMinutes()).slice(-2);
+  if (!confirm('偵測到 ' + label + ' 未完成的草稿，要載入接著填嗎？\n（選「取消」會從空白表單開始，草稿仍會保留）')) return;
+
+  const d = parsed.data;
+  setFields(document, 'm', d.main || {});
+  (d.admissions || []).forEach(a => addAdmission(a));
+  $('#draftInfo').textContent = '已載入 ' + label + ' 的草稿（相片需重新上傳）';
+}
+
+function clearDraft() {
+  if (!confirm('確定要清除草稿並清空整份表單？此動作無法復原。')) return;
+  clearDraftSilent();
+  location.reload();
+}
+
+function clearDraftSilent() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
 }
 </script>
+
 
 </body>
 </html>

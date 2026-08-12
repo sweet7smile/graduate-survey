@@ -135,9 +135,9 @@ function doStudentLogin() {
       if (res.locked) {
         showBanner('#msgBox',
           '登入成功，但這筆資料已通過老師審核，目前為唯讀狀態，無法修改。', 'ok');
-        setTimeout(function () { location.href = pageUrl('index') + sep() + 'mode=edit'; }, 1800);
+        setTimeout(function () { location.href = pageUrl('form') + sep() + 'mode=edit'; }, 1800);
       } else {
-        location.href = pageUrl('index') + sep() + 'mode=edit';
+        location.href = pageUrl('form') + sep() + 'mode=edit';
       }
     })
     .catch(function (e) {

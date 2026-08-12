@@ -10,9 +10,14 @@
 //  Web App 進入點
 // ═══════════════════════════════════════════════════════════
 
-/** 允許的頁面：檔名 → 標題。用白名單避免 ?page= 被亂帶值 */
+/**
+ * 允許的頁面：檔名 → 標題。用白名單避免 ?page= 被亂帶值。
+ * index 是封面頁（先選要做什麼，再進對應頁面），不帶 ?page= 時的預設值；
+ * 原本「index＝表單頁」的角色搬到獨立的 form 頁。
+ */
 const PAGES = {
-  index:  '填寫表單',
+  index:  '首頁',
+  form:   '填寫表單',
   browse: '歷屆經驗查詢',
   login:  '登入',
   admin:  '教師後台'
@@ -29,7 +34,7 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-/** 供 index.html 以 <?!= include('styles') ?> 引入其他檔案 */
+/** 供各頁面以 <?!= include('styles') ?> 引入其他檔案 */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }

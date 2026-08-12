@@ -110,7 +110,8 @@ function renderNav(active) {
   nav.className = 'topnav';
 
   const items = [
-    { key: 'index',  label: '📝 填寫表單',   href: pageUrl('index') },
+    { key: 'index',  label: '🏠 首頁',       href: pageUrl('index') },
+    { key: 'form',   label: '📝 填寫表單',   href: pageUrl('form') },
     { key: 'browse', label: '🔍 歷屆經驗查詢', href: pageUrl('browse') }
   ];
 
@@ -120,7 +121,7 @@ function renderNav(active) {
     right = '<span class="nav-user">👩‍🏫 ' + escapeHtml(s.label || '教師') + '</span>' +
             '<button type="button" class="nav-btn" onclick="logout()">登出</button>';
   } else if (s && s.role === 'student') {
-    items.push({ key: 'edit', label: '✏️ 修改我的資料', href: pageUrl('index') + (runMode() === 'gas' ? '&' : '?') + 'mode=edit' });
+    items.push({ key: 'edit', label: '✏️ 修改我的資料', href: pageUrl('form') + (runMode() === 'gas' ? '&' : '?') + 'mode=edit' });
     right = '<span class="nav-user">🎓 ' + escapeHtml(s.label || '') + '</span>' +
             '<button type="button" class="nav-btn" onclick="logout()">登出</button>';
   } else {

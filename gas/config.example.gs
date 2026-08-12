@@ -58,7 +58,7 @@ const CONFIG = {
   // 原始碼公開，任何人都能繞過網頁直接打 API，這兩層是低成本的第一道防線：
   // 蜜罐擋一般自動填表機器人，流量限制擋短時間內灌爆。擋不住存心針對
   // 本站寫程式的人（他讀得到這行常數本身），真要防那個需要 reCAPTCHA。
-  HONEYPOT_FIELD: 'hp_check',         // 前端隱藏欄位的 key，改這個要同步改 index.html 的 data-m
+  HONEYPOT_FIELD: 'hp_check',         // 前端隱藏欄位的 key，改這個要同步改 form.html 的 data-m
   MAX_SUBMISSIONS_PER_WINDOW: 30,     // 全站流量限制：每個時間窗最多幾筆提交嘗試
   SUBMIT_WINDOW_MIN: 10,              // 時間窗長度（分鐘）；30 筆/10 分鐘足夠讓一整班同時填表
   MAIL_QUOTA_RESERVE: 5,              // 每日寄信配額只剩這個數字以下，先停發教師通知信、保留學生確認信優先

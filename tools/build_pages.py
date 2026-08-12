@@ -6,10 +6,12 @@ build_pages.py — 由 GAS 原始碼產生 GitHub Pages 靜態版
 
 產物（全部放在 repo 根目錄，對應 GitHub Pages 的預設設定 /(root)，
 不必去 Settings 改資料夾，避免選錯造成直接送出 GAS 樣板原始碼）：
-  index.html            單一自包含頁面（styles / script / config 全部內嵌）
-  config.js             API 網址設定檔（已存在則不覆蓋，保留你填的網址）
-  .nojekyll             關掉 Jekyll，避免 GitHub 亂處理檔案
-  gas/config.example.gs ID 與 Email 已抹除的設定檔範本，供公開 repo 使用
+  index.html             封面頁（先選填表單／查詢／後台，再進對應頁面）
+  form.html              填寫表單（原本的 index.html，網址固定改用這個）
+  browse.html / login.html / admin.html
+  config.js              API 網址設定檔（已存在則不覆蓋，保留你填的網址）
+  .nojekyll              關掉 Jekyll，避免 GitHub 亂處理檔案
+  gas/config.example.gs  ID 與 Email 已抹除的設定檔範本，供公開 repo 使用
 
 設計重點：選項清單只有 config.gs 一份來源。這支腳本直接把 config.gs
 的原始碼（抹掉機密後）內嵌進靜態頁再呼叫 getClientConfig()，
@@ -78,7 +80,7 @@ def scrub(config_src: str) -> str:
     return out
 
 
-PAGES = ["index", "browse", "login", "admin"]
+PAGES = ["index", "form", "browse", "login", "admin"]
 
 
 def build_page(name: str, styles: str, script: str, common: str, clean_config: str) -> str:

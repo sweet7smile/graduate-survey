@@ -1,7 +1,7 @@
 <script>
 /* ═══════════════════════════════════════════════════════════
    霧峰農工電子科 畢業生升學資料蒐集 — 前端邏輯
-   CFG 由 index.html 於載入時注入
+   CFG 由 form.html 於載入時注入
    ═══════════════════════════════════════════════════════════ */
 
 const DRAFT_KEY = 'wufai_ee_grad_draft_v1';
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const sess = getSession();
   EDIT_MODE = qs('mode') === 'edit' && sess && sess.role === 'student';
-  renderNav(EDIT_MODE ? 'edit' : 'index');
+  renderNav(EDIT_MODE ? 'edit' : 'form');
 
   if (EDIT_MODE) {
     loadOwnRecord();          // 載入既有資料，載完才顯示表單
