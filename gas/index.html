@@ -7,28 +7,27 @@
 </head>
 <body>
 
-<main class="hero">
+<div class="hero">
   <img class="hero-img" src="https://sweet7smile.github.io/graduate-survey/assets/hero-cover.jpg"
        alt="臺中市立霧峰農業工業高級中等學校 電子科　畢業生升學資料蒐集　記錄你的下一步，成就更好的未來">
+</div>
 
-  <!--
-    這三個選項疊在圖片本身留白的區域（原本畫的四個圖示被使用者挖掉了，
-    改放這三個站內導覽）。位置用百分比定位，跟著圖片等比縮放，
-    不會因為視窗寬度改變而跑位——前提是這個區塊必須放在 .hero 內部，
-    且 .hero-img 維持滿版、不裁切。
-  -->
-  <div class="hero-menu">
-    <a class="hero-menu-item" id="cardForm" href="form.html">
-      <span class="hero-menu-icon">📝</span>
-      <span class="hero-menu-label">填寫表單</span>
+<main class="cover-main">
+  <div class="cover-cards">
+    <a class="cover-card" id="cardForm" href="form.html">
+      <div class="cover-card-icon">📝</div>
+      <div class="cover-card-title">填寫表單</div>
+      <div class="cover-card-desc">分享推甄校系、口試題目、術科內容與升學心得</div>
     </a>
-    <a class="hero-menu-item" id="cardBrowse" href="browse.html">
-      <span class="hero-menu-icon">🔍</span>
-      <span class="hero-menu-label">歷屆經驗查詢</span>
+    <a class="cover-card" id="cardBrowse" href="browse.html">
+      <div class="cover-card-icon">🔍</div>
+      <div class="cover-card-title">歷屆經驗查詢</div>
+      <div class="cover-card-desc">查歷屆口試題目、術科內容、學長姐心得</div>
     </a>
-    <a class="hero-menu-item" id="cardAdmin" href="admin.html">
-      <span class="hero-menu-icon">🗂️</span>
-      <span class="hero-menu-label">教師後台</span>
+    <a class="cover-card" id="cardAdmin" href="admin.html">
+      <div class="cover-card-icon">🗂️</div>
+      <div class="cover-card-title">教師後台</div>
+      <div class="cover-card-desc">審核、檢視完整資料、匯出報表</div>
     </a>
   </div>
 </main>
