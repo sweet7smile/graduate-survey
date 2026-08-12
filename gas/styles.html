@@ -485,5 +485,17 @@ table.data td.num { text-align: center; color: var(--muted); }
   padding: 8px 10px; border: 1px solid var(--brand-light); border-radius: 8px;
   resize: vertical;
 }
+.ef-editing .ef-select, .ef-editing .ef-textinput {
+  width: 100%; font-family: inherit; font-size: 14px;
+  padding: 8px 10px; border: 1px solid var(--brand-light); border-radius: 8px; background: #fff;
+}
+.ef-editing .ef-other { margin-top: 7px; }
+.ef-chk-group { display: flex; flex-wrap: wrap; gap: 7px; }
+.ef-chk-group label {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: 99px;
+  font-size: 13px; background: #fff; cursor: pointer;
+}
+.ef-chk-group label:has(input:checked) { border-color: var(--brand-light); background: #e8f0f7; }
 .ef-actions { display: flex; gap: 6px; margin-top: 6px; }
 </style>

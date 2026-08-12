@@ -298,7 +298,12 @@ const SCHEMA = {
  */
 const EDITABLE_FIELDS = {
   main: ['reflection', 'advice_1', 'advice_2', 'advice_3', 'do_earlier', 'regret',
-         'experiences', 'activities', 'portfolio_focus'],
+         'experiences', 'activities', 'portfolio_focus',
+         // 2026-08 使用者確認後新增：聯絡資訊＋學術事實欄位＋公開層級/接受提問，
+         // 用來修正學生亂填導致資料無效的情況。Email 刻意不開放——它同時是
+         // 學生登入修改資料的憑證之一，教師代改會讓學生用原本的 Email 登不進去。
+         'class_name', 'seat_no', 'phone', 'social_id', 'current_place',
+         'main_path', 'exam_group', 'certificates', 'publish_level', 'willing_qa'],
   itv: ['question', 'my_answer', 'better_answer', 'tip'],
   prc: ['content', 'equipment', 'prep_advice']
 };

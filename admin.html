@@ -490,6 +490,18 @@ table.data td.num { text-align: center; color: var(--muted); }
   padding: 8px 10px; border: 1px solid var(--brand-light); border-radius: 8px;
   resize: vertical;
 }
+.ef-editing .ef-select, .ef-editing .ef-textinput {
+  width: 100%; font-family: inherit; font-size: 14px;
+  padding: 8px 10px; border: 1px solid var(--brand-light); border-radius: 8px; background: #fff;
+}
+.ef-editing .ef-other { margin-top: 7px; }
+.ef-chk-group { display: flex; flex-wrap: wrap; gap: 7px; }
+.ef-chk-group label {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: 99px;
+  font-size: 13px; background: #fff; cursor: pointer;
+}
+.ef-chk-group label:has(input:checked) { border-color: var(--brand-light); background: #e8f0f7; }
 .ef-actions { display: flex; gap: 6px; margin-top: 6px; }
 </style>
 
@@ -934,7 +946,12 @@ const SCHEMA = {
  */
 const EDITABLE_FIELDS = {
   main: ['reflection', 'advice_1', 'advice_2', 'advice_3', 'do_earlier', 'regret',
-         'experiences', 'activities', 'portfolio_focus'],
+         'experiences', 'activities', 'portfolio_focus',
+         // 2026-08 使用者確認後新增：聯絡資訊＋學術事實欄位＋公開層級/接受提問，
+         // 用來修正學生亂填導致資料無效的情況。Email 刻意不開放——它同時是
+         // 學生登入修改資料的憑證之一，教師代改會讓學生用原本的 Email 登不進去。
+         'class_name', 'seat_no', 'phone', 'social_id', 'current_place',
+         'main_path', 'exam_group', 'certificates', 'publish_level', 'willing_qa'],
   itv: ['question', 'my_answer', 'better_answer', 'tip'],
   prc: ['content', 'equipment', 'prep_advice']
 };
@@ -1504,21 +1521,54 @@ function kv(pairs) {
 }
 
 
-/* ── 可編輯欄位（教師修飾學生自述文字用）──────────────── */
-/* FIELD_VALUES 存原始文字（不含 HTML 跳脫），編輯/取消時從這裡讀回 */
+/* ── 可編輯欄位（教師修飾學生自述文字／修正亂填資料用）──── */
+/*
+ * FIELD_VALUES 存目前值（不含 HTML 跳脫），編輯/取消時從這裡讀回。
+ * FIELD_META 存每個欄位的輸入類型，決定編輯時要顯示文字框、下拉選單、
+ * 複選框、還是單一勾選——不然像「公開層級」這種欄位若讓教師自由打字，
+ * 打錯字或格式跟選項對不上，會讓 browse_() 的公開判斷邏輯直接失效。
+ *
+ *   textarea（預設）  多行文字，例：心得、建議
+ *   input             單行文字，例：手機、IG/Line
+ *   select            下拉選單，例：主要出路、報考群類、公開層級
+ *   checkboxes        複選＋「其他」自訂文字，例：證照
+ *   boolean           單一勾選，例：接受提問
+ */
 let FIELD_VALUES = {};
+let FIELD_META = {};
 
-function efView(value) {
+function efView(path) {
+  const meta = FIELD_META[path] || { type: 'textarea' };
+  const value = FIELD_VALUES[path];
+  if (meta.type === 'boolean') return value ? '是' : '否';
   return value ? escapeHtml(value).replace(/\n/g, '<br>') : '<span class="ef-empty">（空白）</span>';
 }
 
-function ef(path, label, value) {
-  FIELD_VALUES[path] = value || '';
+function ef(path, label, value, meta) {
+  FIELD_VALUES[path] = meta && meta.type === 'boolean' ? !!value : (value || '');
+  FIELD_META[path] = meta || { type: 'textarea' };
   return '<div class="ef" data-path="' + escapeHtml(path) + '">' +
     '<div class="ef-head"><span>' + escapeHtml(label) + '</span>' +
     '<button type="button" class="btn-sm ef-edit" data-path="' + escapeHtml(path) + '">✏️ 編輯</button></div>' +
-    '<div class="ef-view">' + efView(value) + '</div>' +
+    '<div class="ef-view">' + efView(path) + '</div>' +
   '</div>';
+}
+
+/** 下拉選單用：主要出路、報考群類、公開層級這類跟固定選項對應的欄位 */
+function efSelect(path, label, value, options, placeholder) {
+  return ef(path, label, value, { type: 'select', options: options, placeholder: placeholder || '（未選擇）' });
+}
+/** 複選＋其他自訂文字用：目前只有證照 */
+function efCheckboxes(path, label, value, options) {
+  return ef(path, label, value, { type: 'checkboxes', options: options });
+}
+/** 單一勾選用：目前只有接受提問 */
+function efBoolean(path, label, value) {
+  return ef(path, label, value, { type: 'boolean' });
+}
+/** 單行文字用：手機、IG/Line、班級、座號、最終落點這類短文字 */
+function efInput(path, label, value) {
+  return ef(path, label, value, { type: 'input' });
 }
 
 function bindEditableFields() {
@@ -1537,37 +1587,104 @@ function bindEditableFields() {
 function startEditField(path) {
   const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
   if (!box) return;
-  const value = FIELD_VALUES[path] || '';
+  const meta = FIELD_META[path] || { type: 'textarea' };
+  const value = FIELD_VALUES[path];
+
+  let inner;
+  if (meta.type === 'select') {
+    const known = meta.options.indexOf(value) >= 0;
+    inner = '<select class="ef-select">' +
+      '<option value="">' + escapeHtml(meta.placeholder) + '</option>' +
+      meta.options.map(function (o) {
+        return '<option value="' + escapeHtml(o) + '"' + (o === value ? ' selected' : '') + '>' +
+               escapeHtml(o) + '</option>';
+      }).join('') +
+      // 保留舊資料裡不在目前選項清單中的值（例如已下架的公開層級選項），
+      // 不然一打開編輯器，沒動作就存檔也會把舊值換成清單裡隨便一個
+      (value && !known ? '<option value="' + escapeHtml(value) + '" selected>' +
+        escapeHtml(value) + '（舊值，已不在選項中）</option>' : '') +
+      '</select>';
+
+  } else if (meta.type === 'checkboxes') {
+    const picked = value ? splitList_client(value) : [];
+    const other = picked.filter(function (p) { return meta.options.indexOf(p) < 0; });
+    inner = '<div class="ef-chk-group">' + meta.options.map(function (o) {
+      return '<label><input type="checkbox" value="' + escapeHtml(o) + '"' +
+        (picked.indexOf(o) >= 0 ? ' checked' : '') + '> ' + escapeHtml(o) + '</label>';
+    }).join('') + '</div>' +
+    '<input type="text" class="ef-textinput ef-other" placeholder="其他（用頓號分隔）" value="' +
+      escapeHtml(other.join('、')) + '">';
+
+  } else if (meta.type === 'boolean') {
+    inner = '<label style="display:flex;align-items:center;gap:6px;font-size:14px">' +
+      '<input type="checkbox" class="ef-boolean"' + (value ? ' checked' : '') + '> 是</label>';
+
+  } else if (meta.type === 'input') {
+    inner = '<input type="text" class="ef-textinput" value="' + escapeHtml(value || '') + '">';
+
+  } else {
+    inner = '<textarea class="ef-textarea" rows="4">' + escapeHtml(value || '') + '</textarea>';
+  }
+
   box.querySelector('.ef-view').outerHTML =
-    '<div class="ef-editing">' +
-      '<textarea class="ef-textarea" rows="4">' + escapeHtml(value) + '</textarea>' +
+    '<div class="ef-editing">' + inner +
       '<div class="ef-actions">' +
         '<button type="button" class="btn-sm ok ef-save" data-path="' + escapeHtml(path) + '">💾 儲存</button>' +
         '<button type="button" class="btn-sm ef-cancel" data-path="' + escapeHtml(path) + '">取消</button>' +
       '</div>' +
     '</div>';
-  const ta = box.querySelector('.ef-textarea');
-  ta.focus();
-  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  const focusEl = box.querySelector('.ef-textarea, .ef-select, .ef-textinput, .ef-boolean');
+  if (focusEl) {
+    focusEl.focus();
+    // setSelectionRange 這個方法在 <input type=checkbox> 上也「存在」（繼承自
+    // HTMLInputElement），但呼叫下去會直接拋 InvalidStateError——用型態判斷，
+    // 不能只檢查方法存不存在。
+    const isTextLike = focusEl.tagName === 'TEXTAREA' ||
+      (focusEl.tagName === 'INPUT' && focusEl.type === 'text');
+    if (isTextLike && focusEl.value) focusEl.setSelectionRange(focusEl.value.length, focusEl.value.length);
+  }
 }
 
 function renderFieldView(path) {
   const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
   if (!box) return;
-  box.querySelector('.ef-editing').outerHTML = '<div class="ef-view">' + efView(FIELD_VALUES[path]) + '</div>';
+  box.querySelector('.ef-editing').outerHTML = '<div class="ef-view">' + efView(path) + '</div>';
+}
+
+/** 從編輯中的欄位讀出目前輸入的值；boolean 回傳布林，其餘回傳字串 */
+function collectEditValue(path) {
+  const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
+  const meta = FIELD_META[path] || { type: 'textarea' };
+
+  if (meta.type === 'select') return box.querySelector('.ef-select').value;
+  if (meta.type === 'boolean') return box.querySelector('.ef-boolean').checked;
+  if (meta.type === 'input') return box.querySelector('.ef-textinput').value;
+  if (meta.type === 'checkboxes') {
+    const picked = Array.from(box.querySelectorAll('.ef-chk-group input:checked')).map(function (i) { return i.value; });
+    const other = box.querySelector('.ef-other').value.trim();
+    if (other) Array.prototype.push.apply(picked, splitList_client(other));
+    return picked.join('、');
+  }
+  return box.querySelector('.ef-textarea').value;
 }
 
 function saveEditField(path) {
   const box = document.querySelector('.ef[data-path="' + cssEscape(path) + '"]');
-  const ta = box.querySelector('.ef-textarea');
+  const meta = FIELD_META[path] || { type: 'textarea' };
   const btn = box.querySelector('.ef-save');
-  const newValue = ta.value;
+  const newValue = collectEditValue(path);
+
+  // willing_qa 這類布林欄位，Sheet 裡實際存的是 'V'/''（跟表單提交時的慣例一致）。
+  // adminEditField_ 是把送來的值原樣寫進儲存格，不會像 submitForm 那樣自動轉換，
+  // 所以這裡要自己轉成同樣的字面值，不然 toBool_() 在別處讀出來會不合預期。
+  const sendValue = meta.type === 'boolean' ? (newValue ? 'V' : '') : newValue;
 
   btn.disabled = true;
   btn.textContent = '儲存中…';
 
   api('adminEditField', {
-    token: token(), submissionId: CURRENT.submissionId, path: path, value: newValue
+    token: token(), submissionId: CURRENT.submissionId, path: path, value: sendValue
   })
     .then(function (res) {
       if (handleAuthFail(res)) return;
@@ -1584,6 +1701,11 @@ function saveEditField(path) {
       alert('連線失敗：' + e);
       btn.disabled = false; btn.textContent = '💾 儲存';
     });
+}
+
+/** 跟表單前端一致的分隔規則：頓號／逗號／全形逗號都當分隔符 */
+function splitList_client(s) {
+  return String(s || '').split(/[、,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
 }
 
 /** querySelector 用的簡易跳脫（避免 path 裡的特殊字元弄壞選擇器） */
@@ -1622,16 +1744,26 @@ function renderDetail(rec) {
   let html = '';
 
   html += '<div class="detail-sec"><h4>基本資料</h4>' + kv([
-    ['班級座號', (m.class_name || '') + ' ' + (m.seat_no || '')],
-    ['Email', m.email], ['手機', m.phone], ['IG/Line', m.social_id],
-    ['最終落點', m.current_place], ['主要出路', m.main_path],
-    ['報考群類', m.exam_group],
+    ['Email（登入憑證，不開放編輯）', m.email],
     ['統測總分', m.tve_total], ['班排', m.rank_pct],
-    ['證照', (m.certificates || []).join('、')],
-    ['公開層級', m.publish_level],
-    ['願意回校分享', m.willing_share ? '是' : ''],
-    ['接受提問', m.willing_qa ? '是' : '']
+    ['願意回校分享', m.willing_share ? '是' : '']
   ]) +
+  '<div class="grid2">' +
+    efInput('main.class_name', '班級', m.class_name) +
+    efInput('main.seat_no', '座號', m.seat_no) +
+  '</div>' +
+  '<div class="grid2">' +
+    efInput('main.phone', '手機', m.phone) +
+    efInput('main.social_id', 'IG/Line', m.social_id) +
+  '</div>' +
+  efInput('main.current_place', '最終落點', m.current_place) +
+  '<div class="grid2">' +
+    efSelect('main.main_path', '主要出路', m.main_path, CFG.options.MAIN_PATHS) +
+    efSelect('main.exam_group', '報考群類', m.exam_group, CFG.options.EXAM_GROUPS) +
+  '</div>' +
+  efCheckboxes('main.certificates', '證照', (m.certificates || []).join('、'), CFG.options.CERTIFICATES) +
+  efSelect('main.publish_level', '公開層級', m.publish_level, CFG.options.PUBLISH_LEVELS) +
+  efBoolean('main.willing_qa', '接受提問', m.willing_qa) +
   ef('main.experiences', '競賽/專題經歷', m.experiences) +
   ef('main.activities', '幹部/社團/志工', m.activities) +
   '</div>';
