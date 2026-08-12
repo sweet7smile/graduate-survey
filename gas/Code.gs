@@ -152,6 +152,102 @@ function initSetup() {
   return msg;
 }
 
+// ═══════════════════════════════════════════════════════════
+//  證照選項改名：批次更新舊資料（手動執行一次）
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * 只預覽會影響哪幾筆資料，不會寫入任何東西。
+ * 請先執行這支、在「執行紀錄」看過清單確認沒問題，
+ * 再執行 applyCertificateRename() 真正寫入。
+ */
+function previewCertificateRename() {
+  const changes = findCertificateRenameChanges_();
+
+  if (!changes.length) {
+    const msg = '沒有資料需要更新，所有證照名稱都已經是新的了。';
+    Logger.log(msg);
+    return msg;
+  }
+
+  const lines = changes.map(function (c) {
+    return c.code + '（' + c.name + '）第 ' + c.row + ' 列\n  舊：' + c.before + '\n  新：' + c.after;
+  });
+  const msg = '共 ' + changes.length + ' 筆會被更新：\n\n' + lines.join('\n\n') +
+              '\n\n確認無誤後，執行 applyCertificateRename() 才會真的寫入。';
+  Logger.log(msg);
+  return msg;
+}
+
+/**
+ * 實際把舊證照名稱改成新名稱，直接覆寫 Main 分頁的「持有證照」欄位。
+ * 請先執行 previewCertificateRename() 確認清單再執行這支。
+ */
+function applyCertificateRename() {
+  const changes = findCertificateRenameChanges_();
+  if (!changes.length) {
+    const msg = '沒有資料需要更新。';
+    Logger.log(msg);
+    return msg;
+  }
+
+  const lock = LockService.getScriptLock();
+  try {
+    if (!lock.tryLock(CONFIG.LOCK_TIMEOUT_MS)) {
+      const msg = '系統忙碌中，請稍後再試一次。';
+      Logger.log(msg);
+      return msg;
+    }
+
+    const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+    const sh = ss.getSheetByName(CONFIG.SHEETS.MAIN);
+    const colCert = indexOfKey_(SCHEMA.MAIN, 'certificates') + 1;
+
+    changes.forEach(function (c) {
+      sh.getRange(c.row, colCert).setValue(c.after);
+    });
+    SpreadsheetApp.flush();
+
+    const msg = '完成，共更新 ' + changes.length + ' 筆資料的證照名稱。';
+    Logger.log(msg);
+    writeLog_('INFO', '', '批次更新證照名稱', msg + '\n' +
+      changes.map(function (c) { return c.code + '：' + c.before + ' → ' + c.after; }).join('\n'));
+    return msg;
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+/** 掃描 Main 分頁，回傳含有舊證照名稱的列與改名後的結果，不寫入任何東西 */
+function findCertificateRenameChanges_() {
+  const map = CONFIG.CERTIFICATE_RENAME_MAP;
+  const rows = readSheetObjects_(CONFIG.SHEETS.MAIN, SCHEMA.MAIN);
+  const changes = [];
+
+  rows.forEach(function (r) {
+    const raw = String(r.data.certificates || '');
+    if (!raw.trim()) return;
+
+    let changed = false;
+    const newList = splitList_(raw).map(function (c) {
+      if (map[c]) { changed = true; return map[c]; }
+      return c;
+    });
+    if (!changed) return;
+
+    changes.push({
+      row: r.row,
+      code: String(r.data.submission_id || '').substring(0, 6).toUpperCase(),
+      name: String(r.data.name || ''),
+      before: raw,
+      after: newList.join('、')
+    });
+  });
+
+  return changes;
+}
+
+
 /** 取得分頁，不存在就建立；表頭與 SCHEMA 不符時重寫表頭 */
 function ensureSheet_(ss, name, headers) {
   let sh = ss.getSheetByName(name);

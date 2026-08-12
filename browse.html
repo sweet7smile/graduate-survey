@@ -675,6 +675,15 @@ const OPTIONS = {
     '雲端物聯網應用', 'PVQC 系列', '全民英檢初級', '全民英檢中級', 'ITE 資訊專業人員', '其他'
   ],
 
+  // 證照選項改名歷史紀錄，供 Code.gs 的 previewCertificateRename() /
+  // applyCertificateRename() 批次更新舊資料用。改完既有資料後這個對照表
+  // 就沒有作用了，但留著當紀錄，之後若又要改名可以照樣加一行。
+  CERTIFICATE_RENAME_MAP: {
+    '乙級工業電子': '乙級電腦硬體裝修',
+    '丙級數位電子': '乙級儀表電子',
+    'TQC 系列': 'PVQC 系列'
+  },
+
   STAGE1_RESULTS: ['通過', '未通過', '不適用（無一階篩選）'],
 
   STAGE2_ITEMS: [

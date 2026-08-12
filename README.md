@@ -266,11 +266,24 @@ commit + push 後，Pages 上的表單就會真的寫進你的 Sheet。
 | 相片張數 / 容量上限 | `MAX_FILES_PER_PRACTICAL`、`MAX_FILES_TOTAL`、`MAX_TOTAL_BYTES` |
 | 相片壓縮強度 | `IMAGE_MAX_EDGE`、`IMAGE_QUALITY` |
 | 新增證照 / 群類 / 題目分類 | `OPTIONS` 內對應陣列 |
+| 證照選項改名，連同舊資料一起更新 | 見下方「證照改名批次更新」 |
 | 新增欄位 | `SCHEMA` 加一列 `{key, label}`，再到 `index.html` 加對應 `data-m` 欄位 |
 
 - 改 `SCHEMA` 後要**重新執行 `initSetup`** 更新表頭
 - 改任何東西後要**重跑 `build_pages.py`** 才會同步到 GitHub Pages
 - 選項清單只有 `config.gs` 一份來源，靜態版是內嵌它產生的，不會不同步
+
+### 證照改名批次更新
+
+只改 `OPTIONS.CERTIFICATES` 不會動到已經送出的舊資料——選項清單只影響
+「以後填表看到什麼」，Sheet 裡已存的證照名稱不會自動跟著改。
+
+要連舊資料一起更新，兩步驟都在 Apps Script 編輯器手動執行：
+
+1. `config.gs` 的 `CONFIG.CERTIFICATE_RENAME_MAP` 加上 `{ 舊名稱: 新名稱 }`
+2. 函式選單先執行 `previewCertificateRename()` **（唯讀，不會寫入任何東西）**，
+   到「執行記錄」看會影響哪幾筆、改前改後長怎樣
+3. 確認清單沒問題後，再執行 `applyCertificateRename()` 才會真的寫入 Sheet
 
 ---
 
