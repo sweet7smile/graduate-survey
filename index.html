@@ -505,59 +505,13 @@ table.data td.num { text-align: center; color: var(--muted); }
 .ef-actions { display: flex; gap: 6px; margin-top: 6px; }
 
 /* ═══ 封面頁（index.html）══════════════════════════════
-   暖色調獨立於全站主色（navy+amber），營造「入口頁」的第一印象；
-   卡片的互動色沿用全站 --accent，點進去之後不會突然換一套識別。 */
-:root {
-  --cover-cream: #f7f0e4;
-  --cover-cream-deep: #efe2cc;
-  --cover-terracotta: #d98b5f;
-  --cover-terracotta-deep: #c06f42;
-  --cover-ink: #3a2e26;
-}
-
-.hero {
-  position: relative;
-  min-height: 52vh;
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-  padding: 60px 20px 70px;
-  text-align: center;
-}
-.hero-bg {
-  position: absolute; inset: 0;
-  background:
-    repeating-linear-gradient(115deg,
-      var(--cover-cream) 0px, var(--cover-cream) 46px,
-      var(--cover-cream-deep) 46px, var(--cover-cream-deep) 92px),
-    linear-gradient(160deg, var(--cover-terracotta) 0%, transparent 55%);
-  background-blend-mode: normal, multiply;
-  opacity: 1;
-}
-.hero-bg::after {
-  content: "";
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.55), transparent 60%);
-}
-.hero-inner { position: relative; max-width: 640px; }
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: rgba(255,255,255,.72); color: var(--cover-ink);
-  padding: 7px 16px; border-radius: 99px; font-size: 13px; font-weight: 700;
-  margin-bottom: 22px; box-shadow: 0 2px 10px rgba(58,46,38,.08);
-}
-.hero-title {
-  margin: 0 0 14px; color: var(--cover-ink);
-  font-size: clamp(34px, 8vw, 58px); line-height: 1.18; font-weight: 800;
-  letter-spacing: .5px;
-}
-.hero-tagline {
-  margin: 0; color: var(--cover-terracotta-deep);
-  font-size: clamp(15px, 3vw, 18px); font-weight: 600;
-}
+   hero 是學校提供的宣傳圖（校徽＋校舍＋標題文字都已經畫在圖裡），
+   這裡只負責讓它滿版、等比縮放、不裁切。 */
+.hero { line-height: 0; }
+.hero-img { width: 100%; height: auto; display: block; }
 
 .cover-main {
-  max-width: 980px; margin: -46px auto 0; padding: 0 18px 30px;
-  position: relative; z-index: 2;
+  max-width: 980px; margin: 0 auto; padding: 26px 18px 30px;
 }
 .cover-cards {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -585,8 +539,7 @@ table.data td.num { text-align: center; color: var(--muted); }
 .cover-card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
 @media (max-width: 600px) {
-  .hero { min-height: 42vh; padding: 44px 18px 60px; }
-  .cover-main { margin-top: -34px; }
+  .cover-main { padding: 20px 14px 24px; }
 }
 </style>
 
@@ -594,12 +547,8 @@ table.data td.num { text-align: center; color: var(--muted); }
 <body>
 
 <div class="hero">
-  <div class="hero-bg" aria-hidden="true"></div>
-  <div class="hero-inner">
-    <div class="hero-badge">🎓 <span id="heroSchool">臺中市立霧峰農業工業高級中等學校　電子科</span></div>
-    <h1 class="hero-title">學長姐的路<br>陪你走一段</h1>
-    <p class="hero-tagline">畢業生升學經驗，留給每一屆學弟妹。</p>
-  </div>
+  <img class="hero-img" src="https://sweet7smile.github.io/graduate-survey/assets/hero-cover.jpg"
+       alt="臺中市立霧峰農業工業高級中等學校 電子科　畢業生升學資料蒐集　記錄你的下一步，成就更好的未來">
 </div>
 
 <main class="cover-main">
@@ -1243,7 +1192,6 @@ function showBanner(container, text, kind) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('heroSchool').textContent = CFG.school + '　' + CFG.dept;
   // 靜態版用相對路徑（寫死在 href 裡就能動），GAS 版要換成帶 ?page= 的網址
   document.getElementById('cardForm').href = pageUrl('form');
   document.getElementById('cardBrowse').href = pageUrl('browse');

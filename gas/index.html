@@ -8,12 +8,8 @@
 <body>
 
 <div class="hero">
-  <div class="hero-bg" aria-hidden="true"></div>
-  <div class="hero-inner">
-    <div class="hero-badge">🎓 <span id="heroSchool">臺中市立霧峰農業工業高級中等學校　電子科</span></div>
-    <h1 class="hero-title">學長姐的路<br>陪你走一段</h1>
-    <p class="hero-tagline">畢業生升學經驗，留給每一屆學弟妹。</p>
-  </div>
+  <img class="hero-img" src="https://sweet7smile.github.io/graduate-survey/assets/hero-cover.jpg"
+       alt="臺中市立霧峰農業工業高級中等學校 電子科　畢業生升學資料蒐集　記錄你的下一步，成就更好的未來">
 </div>
 
 <main class="cover-main">
@@ -47,7 +43,6 @@
 <?!= include('common'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('heroSchool').textContent = CFG.school + '　' + CFG.dept;
   // 靜態版用相對路徑（寫死在 href 裡就能動），GAS 版要換成帶 ?page= 的網址
   document.getElementById('cardForm').href = pageUrl('form');
   document.getElementById('cardBrowse').href = pageUrl('browse');
