@@ -505,68 +505,94 @@ table.data td.num { text-align: center; color: var(--muted); }
 .ef-actions { display: flex; gap: 6px; margin-top: 6px; }
 
 /* ═══ 封面頁（index.html）══════════════════════════════
-   hero 是學校提供的宣傳圖（校徽＋校舍＋標題文字都已經畫在圖裡），
-   這裡只負責讓它滿版、等比縮放、不裁切。 */
-.hero { line-height: 0; }
+   hero 是學校提供的宣傳圖（校徽＋校舍＋標題文字都已經畫在圖裡）。
+   三個站內導覽項目疊在圖片本身留白的區域（原本畫在那裡的四個圖示
+   被使用者挖掉了），色系（--hero-purple/--hero-gold）取樣自圖片
+   本身的標題文字與波浪配色，融進圖片裡而不是另外貼一塊 UI 上去。 */
+:root {
+  --hero-purple: #402065;
+  --hero-gold: #fbb421;
+}
+
+.hero { position: relative; }
 .hero-img { width: 100%; height: auto; display: block; }
 
-.cover-main {
-  max-width: 980px; margin: 0 auto; padding: 26px 18px 30px;
+/*
+ * 位置是量測圖片本身留白區域算出來的百分比（相對 .hero，也就是相對
+ * 圖片本身，因為 .hero 除了這張圖沒有其他內容撐開高度）：
+ * 空白區大約在圖片 54%~77% 高、左側 0%~54% 寬的範圍，這裡抓
+ * top 54% / height 21% / left 3% / width 50%，留一點邊界安全距離，
+ * 避免疊到右側建築照片或底部的紫色波浪。改圖以後這組數字要重量。
+ */
+.hero-menu {
+  position: absolute;
+  top: 54%; left: 3%; width: 50%; height: 21%;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
 }
-.cover-cards {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 16px;
+.hero-menu-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5%; flex: 1; height: 100%; min-width: 0;
+  text-decoration: none;
 }
-.cover-card {
-  display: block; text-decoration: none; color: inherit;
-  background: #fff; border: 1px solid var(--line); border-radius: 18px;
-  padding: 30px 22px; text-align: center;
-  box-shadow: 0 10px 28px rgba(58,46,38,.10);
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-}
-.cover-card:hover, .cover-card:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 34px rgba(58,46,38,.16);
-  border-color: var(--accent);
-}
-.cover-card-icon {
-  width: 62px; height: 62px; margin: 0 auto 14px;
+.hero-menu-icon {
+  width: 38%; aspect-ratio: 1; max-width: 84px; min-width: 30px;
+  box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
-  font-size: 28px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  border-radius: 50%; border: 2px solid var(--hero-purple);
+  background: rgba(255,255,255,.62);
+  font-size: clamp(13px, 2.6vw, 28px);
+  transition: transform .15s ease, background .15s ease;
 }
-.cover-card-title { font-size: 18px; font-weight: 800; color: var(--brand); margin-bottom: 6px; }
-.cover-card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.hero-menu-item:hover .hero-menu-icon,
+.hero-menu-item:focus-visible .hero-menu-icon {
+  transform: translateY(-3px);
+  background: var(--hero-purple);
+}
+.hero-menu-label {
+  font-size: clamp(9px, 1.5vw, 14px); font-weight: 700; color: var(--hero-purple);
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
 
-@media (max-width: 600px) {
-  .cover-main { padding: 20px 14px 24px; }
+/* 手機上留白區太窄，塞三個可點項目會太擠、字級小到讀不出來，
+   改成離開圖片、用滿版白底條排在圖片正下方，跟手機版其他頁面
+   的觸控尺寸一致。 */
+@media (max-width: 560px) {
+  .hero-menu {
+    position: static; width: auto; height: auto;
+    padding: 16px 14px; gap: 6px;
+    background: #fff;
+  }
+  .hero-menu-icon { width: 46px; height: 46px; max-width: none; font-size: 20px; }
+  .hero-menu-label { font-size: 12px; white-space: normal; }
 }
 </style>
 
 </head>
 <body>
 
-<div class="hero">
+<main class="hero">
   <img class="hero-img" src="https://sweet7smile.github.io/graduate-survey/assets/hero-cover.jpg"
        alt="臺中市立霧峰農業工業高級中等學校 電子科　畢業生升學資料蒐集　記錄你的下一步，成就更好的未來">
-</div>
 
-<main class="cover-main">
-  <div class="cover-cards">
-    <a class="cover-card" id="cardForm" href="form.html">
-      <div class="cover-card-icon">📝</div>
-      <div class="cover-card-title">填寫表單</div>
-      <div class="cover-card-desc">分享推甄校系、口試題目、術科內容與升學心得</div>
+  <!--
+    這三個選項疊在圖片本身留白的區域（原本畫的四個圖示被使用者挖掉了，
+    改放這三個站內導覽）。位置用百分比定位，跟著圖片等比縮放，
+    不會因為視窗寬度改變而跑位——前提是這個區塊必須放在 .hero 內部，
+    且 .hero-img 維持滿版、不裁切。
+  -->
+  <div class="hero-menu">
+    <a class="hero-menu-item" id="cardForm" href="form.html">
+      <span class="hero-menu-icon">📝</span>
+      <span class="hero-menu-label">填寫表單</span>
     </a>
-    <a class="cover-card" id="cardBrowse" href="browse.html">
-      <div class="cover-card-icon">🔍</div>
-      <div class="cover-card-title">歷屆經驗查詢</div>
-      <div class="cover-card-desc">查歷屆口試題目、術科內容、學長姐心得</div>
+    <a class="hero-menu-item" id="cardBrowse" href="browse.html">
+      <span class="hero-menu-icon">🔍</span>
+      <span class="hero-menu-label">歷屆經驗查詢</span>
     </a>
-    <a class="cover-card" id="cardAdmin" href="admin.html">
-      <div class="cover-card-icon">🗂️</div>
-      <div class="cover-card-title">教師後台</div>
-      <div class="cover-card-desc">審核、檢視完整資料、匯出報表</div>
+    <a class="hero-menu-item" id="cardAdmin" href="admin.html">
+      <span class="hero-menu-icon">🗂️</span>
+      <span class="hero-menu-label">教師後台</span>
     </a>
   </div>
 </main>
