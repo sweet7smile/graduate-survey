@@ -31,7 +31,7 @@ const CONFIG = {
 
   // ── 表單限制 ────────────────────────────────────────────
   MAX_ADMISSIONS: 6,                  // 推甄校系筆數上限
-  GRAD_YEAR_COUNT: 7,                 // 畢業學年度下拉要列幾屆
+  GRAD_YEAR_COUNT: 7,                 // 畢業年度下拉要列幾屆
   GRAD_YEAR_LATEST: '',               // 留空＝自動判斷；填 '115' 可強制指定最新的一屆
 
   // ── 行為 ────────────────────────────────────────────────
@@ -168,7 +168,7 @@ const SCHEMA = {
   MAIN: [
     { key: 'submission_id',    label: '提交編號' },
     { key: 'submitted_at',     label: '提交時間' },
-    { key: 'grad_year',        label: '畢業學年度' },
+    { key: 'grad_year',        label: '畢業年度' },
     { key: 'name',             label: '姓名' },
     { key: 'class_name',       label: '班級' },
     { key: 'seat_no',          label: '座號' },
@@ -357,7 +357,7 @@ const LAYOUT = {
 
 
 /**
- * 產生可選的畢業學年度清單（民國制）。
+ * 產生可選的畢業年度清單（民國制）。
  *
  * 關鍵是「目前學年度」不等於「最近一個已畢業的學年度」：
  *   115 學年度 = 2026-08 ～ 2027-07，這批學生 2027 年 6 月才畢業。

@@ -458,7 +458,7 @@ function validate_(payload) {
   const m = payload.main;
 
   const required = [
-    ['grad_year', '畢業學年度'],
+    ['grad_year', '畢業年度'],
     ['name', '姓名'],
     ['email', '聯絡 Email'],
     ['current_place', '目前就讀學校／服務單位'],
@@ -690,7 +690,7 @@ function writeLog_(level, submissionId, message, detail) {
  */
 function sendMails_(main, shortId, admCount, itvCount, prcCount) {
   const summary =
-    '畢業學年度：' + gradYearLabel_(main.grad_year) + '\n' +
+    '畢業年度：' + gradYearLabel_(main.grad_year) + '\n' +
     '姓名：' + main.name + '\n' +
     '目前就讀／服務：' + main.current_place + '\n' +
     '主要出路：' + main.main_path + '\n' +

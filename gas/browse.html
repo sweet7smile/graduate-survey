@@ -36,7 +36,7 @@
           <select id="fMajor"><option value="">全部科系</option></select>
         </div>
         <div class="field" style="margin:0">
-          <label>畢業學年度</label>
+          <label>畢業年度</label>
           <select id="fYear"><option value="">全部年度</option></select>
         </div>
         <div class="field" style="margin:0" id="wrapCat">
@@ -179,7 +179,7 @@ function renderStat() {
     '<div class="stat-chip"><b>' + DATA.stat.admissions + '</b>筆校系結果</div>';
 }
 
-/** 依畢業學年度篩選時要靠 key 對應到人 */
+/** 依畢業年度篩選時要靠 key 對應到人 */
 function yearOf(key) {
   const p = DATA.people.filter(function (x) { return x.key === key; })[0];
   return p ? String(p.gradYear) : '';
