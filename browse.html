@@ -593,8 +593,8 @@ table.data td.num { text-align: center; color: var(--muted); }
 
   <div class="tabs" style="margin-bottom:14px">
     <button type="button" class="tab active" data-view="people">🎓 學長姐心得</button>
+    <button type="button" class="tab" data-view="practicals">🔧 術科題目</button>
     <button type="button" class="tab" data-view="questions">❓ 口試題目</button>
-    <button type="button" class="tab" data-view="practicals">🔧 術科</button>
   </div>
 
   <div id="result"></div>
@@ -1268,6 +1268,13 @@ function load() {
         return;
       }
       DATA = res;
+      // 原始順序是後端依 Sheet 列傳回來的，等於依提交時間先後——不打亂的話
+      // 最早填的人心得永遠排最前面。這裡只在載入當下洗牌一次，不是每次
+      // render() 都洗，不然切換分頁、打關鍵字篩選時卡片順序會一直跳動，
+      // 讓人找不到剛剛看到的那張。下次重新整理頁面才會換一組新順序。
+      shuffleArray(DATA.people);
+      shuffleArray(DATA.questions);
+      shuffleArray(DATA.practicals);
       buildFilters();
       renderStat();
       render();
@@ -1276,6 +1283,15 @@ function load() {
       document.getElementById('overlay').classList.remove('show');
       showBanner('#msgBox', '連線失敗：' + (e && e.message ? e.message : e));
     });
+}
+
+/** 原地 Fisher-Yates 洗牌，均勻隨機、不偏袒任何位置 */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
 }
 
 function uniqueSorted(arr) {
