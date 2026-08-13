@@ -409,6 +409,9 @@ table.data th {
 }
 table.data tr:hover td { background: #fafcfe; }
 table.data td.num { text-align: center; color: var(--muted); }
+/* 姓名／班級是短文字，換行反而難讀；只鎖定這兩欄，
+   不影響「最終落點」這種本來就可能較長、需要換行的欄位 */
+table.data td.nowrap-cell { white-space: nowrap; }
 
 .btn-sm {
   padding: 5px 11px; font-size: 13px; border-radius: 7px;

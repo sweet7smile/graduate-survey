@@ -279,8 +279,8 @@ function renderTable() {
     return '<tr>' +
       '<td><code>' + escapeHtml(x.code) + '</code></td>' +
       '<td class="num">' + escapeHtml(gradYearLabel(x.gradYear, true)) + '</td>' +
-      '<td><strong>' + escapeHtml(x.name) + '</strong></td>' +
-      '<td>' + escapeHtml(x.className) + '</td>' +
+      '<td class="nowrap-cell"><strong>' + escapeHtml(x.name) + '</strong></td>' +
+      '<td class="nowrap-cell">' + escapeHtml(x.className) + '</td>' +
       '<td>' + escapeHtml(x.currentPlace) + '</td>' +
       '<td><span class="tag ' + anon + '">' + shortLevel + '</span></td>' +
       '<td class="num">' + x.counts.adm + '</td>' +
